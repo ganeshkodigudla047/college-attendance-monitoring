@@ -1045,6 +1045,7 @@ body {
 	border: 1px solid rgba(186, 230, 253, 0.9);
 	text-align: center;
 	box-shadow: 0 24px 48px -38px rgba(14, 165, 233, 0.45);
+	transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .card:hover {
@@ -2248,18 +2249,10 @@ body:has(.loading-overlay:not(.fade-out)) {
 
 /* ===== BACKGROUND TRANSPARENCY ===== */
 body:has(#loadingScreen) .status-box,
-.status-box,
-.admin-settings-box,
-.session-range,
-.cards-container .card,
-.records-container,
-.attendance-box,
-.profile-card-v2,
-.mark-session-box,
-.home-session-box,
-.admin-setting-item,
-.session-card,
-.profile-info-item-v2 {
+.status-box, .admin-settings-box, .session-range,
+.cards-container .card, .records-container, .attendance-box,
+.profile-card-v2, .mark-session-box, .home-session-box,
+.admin-setting-item, .session-card, .profile-info-item-v2 {
     background: transparent !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -2443,4 +2436,22 @@ body.has-bg .custom-select-trigger {
 }
 body.has-bg .custom-select-trigger:hover {
     background: rgba(255,255,255,0.22) !important;
+}
+
+/* ===== CARD HOVER — absolute last so nothing overrides ===== */
+.card, .stat-card, .session-card,
+.admin-setting-item, .profile-info-item-v2 {
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.card:hover, .stat-card:hover, .session-card:hover,
+.admin-setting-item:hover, .profile-info-item-v2:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.15) !important;
+}
+body.has-bg .card:hover, body.has-bg .stat-card:hover,
+body.has-bg .session-card:hover, body.has-bg .admin-setting-item:hover,
+body.has-bg .profile-info-item-v2:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.18) !important;
+    background: rgba(255,255,255,0.13) !important;
 }
