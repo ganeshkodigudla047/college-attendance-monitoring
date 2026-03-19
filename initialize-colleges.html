@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initialize Colleges Collection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+            font-size: 1rem;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .step {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #495057;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏗️ Initialize Colleges Collection</h1>
+        <p>This tool creates the initial colleges collection and sets up the database structure for multi-college support.</p>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> Make sure you've updated your Firestore rules first!
+        </div>
+        
+        <div class="step">
+            <h3>Step 1: Update Firestore Rules</h3>
+            <p>Copy the rules below and paste them in Firebase Console → Firestore → Rules:</p>
+            <pre id="firestoreRules">Loading rules...</pre>
+            <button onclick="copyRules()">Copy Rules</button>
+            <a href="https://console.firebase.google.com" target="_blank" style="margin-left: 1rem;">Open Firebase Console</a>
+        </div>
+        
+        <div class="step">
+            <h3>Step 2: Initialize Database</h3>
+            <p>This will create a default college and set up the collection structure:</p>
+            <button id="initBtn" onclick="initializeDatabase()">Initialize Colleges Collection</button>
+            <div id="initResult"></div>
+        </div>
+        
+        <div class="step">
+            <h3>Step 3: Test Access</h3>
+            <p>After initialization, test if you can access the college management:</p>
+            <button onclick="testAccess()">Test College Access</button>
+            <button onclick="window.location.href='college-management.html'">Go to College Management</button>
+            <div id="testResult"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from "./firebase.js";
+        import {
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import {
+            collection,
+            getDocs,
+            setDoc,
+            doc,
+            serverTimestamp
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        let currentUser = null;
+
+        // Load Firestore rules
+        fetch('./firestore.rules')
+            .then(response => response.text())
+            .then(rules => {
+                document.getElementById('firestoreRules').textContent = rules;
+            })
+            .catch(() => {
+                document.getElementById('firestoreRules').textContent = 'Could not load rules file. Please copy from firestore.rules manually.';
+            });
+
+        // Check authentication
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (!user) {
+                document.getElementById('initResult').innerHTML = 
+                    '<div class="error">❌ Please login first</div>';
+                document.getElementById('initBtn').disabled = true;
+            }
+        });
+
+        window.copyRules = function() {
+            const rules = document.getElementById('firestoreRules').textContent;
+            navigator.clipboard.writeText(rules).then(() => {
+                alert('Firestore rules copied to clipboard!');
+            });
+        };
+
+        window.initializeDatabase = async function() {
+            if (!currentUser) {
+                document.getElementById('initResult').innerHTML = 
+                    '<div class="error">❌ Please login first</div>';
+                return;
+            }
+
+            const initBtn = document.getElementById('initBtn');
+            initBtn.disabled = true;
+            initBtn.textContent = 'Initializing...';
+
+            try {
+                // Create default college
+                const defaultCollege = {
+                    name: "Default College",
+                    code: "DEFAULT",
+                    email: "admin@defaultcollege.edu",
+                    address: "Please update this address",
+                    phone: "+1234567890",
+                    website: "",
+                    gpsSettings: {
+                        latitude: null,
+                        longitude: null,
+                        radius: 100
+                    },
+                    settings: {
+                        timezone: "Asia/Kolkata",
+                        academicYear: "2024-25",
+                        workingDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                        sessionTimings: {
+                            forenoon: { start: "09:00", end: "12:00" },
+                            afternoon: { start: "13:00", end: "16:00" }
+                        }
+                    },
+                    isActive: true,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    createdBy: currentUser.uid
+                };
+
+                // Create the college document
+                await setDoc(doc(db, "colleges", "default-college"), defaultCollege);
+
+                document.getElementById('initResult').innerHTML = 
+                    '<div class="success">✅ Colleges collection initialized successfully!<br>Default college created with ID: default-college</div>';
+
+            } catch (error) {
+                console.error('Initialization error:', error);
+                document.getElementById('initResult').innerHTML = 
+                    '<div class="error">❌ Error initializing database: ' + error.message + '<br><br>Make sure you\'ve updated the Firestore rules first!</div>';
+            } finally {
+                initBtn.disabled = false;
+                initBtn.textContent = 'Initialize Colleges Collection';
+            }
+        };
+
+        window.testAccess = async function() {
+            if (!currentUser) {
+                document.getElementById('testResult').innerHTML = 
+                    '<div class="error">❌ Please login first</div>';
+                return;
+            }
+
+            try {
+                const collegesSnapshot = await getDocs(collection(db, "colleges"));
+                
+                if (collegesSnapshot.empty) {
+                    document.getElementById('testResult').innerHTML = 
+                        '<div class="warning">⚠️ No colleges found. Please initialize the database first.</div>';
+                } else {
+                    document.getElementById('testResult').innerHTML = 
+                        '<div class="success">✅ Access successful! Found ' + collegesSnapshot.size + ' college(s).</div>';
+                }
+
+            } catch (error) {
+                console.error('Test access error:', error);
+                document.getElementById('testResult').innerHTML = 
+                    '<div class="error">❌ Access test failed: ' + error.message + '<br><br>Please check your Firestore rules.</div>';
+            }
+        };
+    </script>
+</body>
+</html>

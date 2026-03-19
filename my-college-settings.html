@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My College Settings</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #1e293b;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .college-card {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+
+        .college-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .college-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+
+        .college-info h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .college-code {
+            font-size: 1rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-box h4 {
+            color: #0369a1;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box p {
+            color: #0369a1;
+            font-size: 0.875rem;
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .warning-box h4 {
+            color: #92400e;
+            margin-bottom: 0.5rem;
+        }
+
+        .warning-box p {
+            color: #92400e;
+            font-size: 0.875rem;
+        }
+
+        .success-message {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #166534;
+        }
+
+        .error-message {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            color: #991b1b;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 0 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1>🏫 My College Settings</h1>
+        <button class="btn btn-secondary" onclick="window.location.href='college-admin-dashboard.html'">
+            ← Back to Dashboard
+        </button>
+    </header>
+
+    <div class="container">
+        <div id="loadingMessage">
+            <div class="college-card">
+                <h3>Loading college information...</h3>
+                <p>Please wait while we fetch your college details.</p>
+            </div>
+        </div>
+
+        <div id="collegeSettings" style="display: none;">
+            <div class="college-card">
+                <div class="college-header">
+                    <div class="college-logo" id="collegeLogo">🏫</div>
+                    <div class="college-info">
+                        <h2 id="collegeDisplayName">College Name</h2>
+                        <div class="college-code" id="collegeDisplayCode">CODE</div>
+                    </div>
+                </div>
+
+                <div class="info-box">
+                    <h4>📝 College Admin Responsibilities</h4>
+                    <p>As a college admin, you can update your college's information, GPS location, and session timings. These settings affect all users in your college.</p>
+                </div>
+
+                <form id="collegeSettingsForm">
+                    <div class="form-group">
+                        <label for="collegeName">College Name *</label>
+                        <input type="text" id="collegeName" required>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="collegeCode">College Code *</label>
+                            <input type="text" id="collegeCode" required readonly style="background: #f8fafc;">
+                            <small style="color: #64748b; font-size: 0.75rem;">College code cannot be changed</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="collegeEmail">College Email *</label>
+                            <input type="email" id="collegeEmail" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="collegeAddress">College Address</label>
+                        <textarea id="collegeAddress" rows="3" placeholder="Enter complete college address"></textarea>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="collegePhone">College Phone</label>
+                            <input type="tel" id="collegePhone" placeholder="+91-XXXXXXXXXX">
+                        </div>
+                        <div class="form-group">
+                            <label for="collegeWebsite">College Website</label>
+                            <input type="url" id="collegeWebsite" placeholder="https://www.yourcollege.edu">
+                        </div>
+                    </div>
+
+                    <div class="warning-box">
+                        <h4>⚠️ Important: GPS Location Setup</h4>
+                        <p>GPS coordinates are crucial for location-based attendance. Please provide the exact coordinates of your college campus. Students will need to be within the specified radius to mark attendance.</p>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="gpsLatitude">GPS Latitude *</label>
+                            <input type="number" id="gpsLatitude" step="any" placeholder="e.g., 12.9716" required>
+                            <small style="color: #64748b; font-size: 0.75rem;">Exact campus latitude coordinate</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="gpsLongitude">GPS Longitude *</label>
+                            <input type="number" id="gpsLongitude" step="any" placeholder="e.g., 77.5946" required>
+                            <small style="color: #64748b; font-size: 0.75rem;">Exact campus longitude coordinate</small>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="gpsRadius">Attendance Radius (meters)</label>
+                        <input type="number" id="gpsRadius" value="100" min="10" max="1000">
+                        <small style="color: #64748b; font-size: 0.75rem;">Students must be within this distance to mark attendance</small>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>🕒 Session Timings</h4>
+                        <p>Set the standard class timings for your college. These will be used for attendance tracking and scheduling.</p>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fnStart">Forenoon Start Time</label>
+                            <input type="time" id="fnStart" value="09:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="fnEnd">Forenoon End Time</label>
+                            <input type="time" id="fnEnd" value="12:00">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="anStart">Afternoon Start Time</label>
+                            <input type="time" id="anStart" value="13:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="anEnd">Afternoon End Time</label>
+                            <input type="time" id="anEnd" value="16:00">
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                        <button type="submit" class="btn btn-primary">
+                            💾 Save College Settings
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">
+                            🔄 Reset Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="errorMessage" style="display: none;">
+            <div class="college-card">
+                <div class="error-message">
+                    <h3>❌ Access Error</h3>
+                    <p id="errorText">Unable to load college settings.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="my-college-settings.js"></script>
+</body>
+</html>

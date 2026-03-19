@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-College Migration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #dc2626;
+            margin-bottom: 1rem;
+        }
+        
+        .warning {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #991b1b;
+        }
+        
+        .info {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #1e40af;
+        }
+        
+        .success {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #166534;
+        }
+        
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+        
+        button:hover {
+            background: #2563eb;
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+        
+        .danger {
+            background: #dc2626;
+        }
+        
+        .danger:hover {
+            background: #b91c1c;
+        }
+        
+        #log {
+            background: #1f2937;
+            color: #f9fafb;
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 1rem;
+        }
+        
+        .step {
+            margin: 1rem 0;
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        
+        .step h3 {
+            margin-top: 0;
+            color: #374151;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #3b82f6;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ Multi-College Migration</h1>
+        
+        <div class="warning">
+            <strong>WARNING:</strong> This migration will permanently modify your database structure. 
+            Make sure you have a complete backup before proceeding!
+        </div>
+        
+        <div class="info">
+            <h3>What this migration does:</h3>
+            <ul>
+                <li>Creates a default college entry in your database</li>
+                <li>Updates all existing users with college information</li>
+                <li>Migrates attendance records, settings, and other data</li>
+                <li>Enables multi-college support across the system</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Pre-Migration Checklist</h3>
+            <label>
+                <input type="checkbox" id="backupCheck"> 
+                I have created a backup of my Firebase database
+            </label><br>
+            <label>
+                <input type="checkbox" id="testCheck"> 
+                I have tested this on a development environment
+            </label><br>
+            <label>
+                <input type="checkbox" id="understandCheck"> 
+                I understand this change cannot be easily reversed
+            </label>
+        </div>
+        
+        <div class="step">
+            <h3>Migration Progress</h3>
+            <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div id="currentStep">Ready to start migration</div>
+        </div>
+        
+        <div>
+            <button id="startMigration" class="danger" disabled>Start Migration</button>
+            <button id="testConnection">Test Database Connection</button>
+            <button onclick="window.location.href='college-management.html'">Go to College Management</button>
+        </div>
+        
+        <div id="log" style="display: none;"></div>
+    </div>
+
+    <script type="module">
+        import { auth, db } from "./firebase.js";
+        import {
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import {
+            collection,
+            getDocs,
+            getDoc,
+            doc
+        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+        let currentUser = null;
+        const log = document.getElementById('log');
+        const progressBar = document.getElementById('progressBar');
+        const currentStep = document.getElementById('currentStep');
+        const startButton = document.getElementById('startMigration');
+
+        // Check authentication
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                logMessage("❌ Please login first");
+                return;
+            }
+            
+            currentUser = user;
+            
+            // Check if user is admin
+            const userDoc = await getDoc(doc(db, "users", user.uid));
+            if (!userDoc.exists() || !["admin", "principal", "superadmin"].includes(userDoc.data().role)) {
+                logMessage("❌ Admin privileges required");
+                return;
+            }
+            
+            logMessage("✅ Authentication successful");
+        });
+
+        // Enable migration button when all checkboxes are checked
+        const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+                startButton.disabled = !allChecked || !currentUser;
+            });
+        });
+
+        // Test database connection
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            logMessage("Testing database connection...");
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                logMessage(`✅ Connection successful. Found ${usersSnap.size} users.`);
+            } catch (error) {
+                logMessage(`❌ Connection failed: ${error.message}`);
+            }
+        });
+
+        // Start migration
+        startButton.addEventListener('click', async () => {
+            if (!confirm("Are you absolutely sure you want to start the migration? This cannot be undone!")) {
+                return;
+            }
+            
+            startButton.disabled = true;
+            log.style.display = 'block';
+            
+            try {
+                await runMigration();
+            } catch (error) {
+                logMessage(`❌ Migration failed: ${error.message}`);
+            }
+        });
+
+        function logMessage(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            log.textContent += `[${timestamp}] ${message}\n`;
+            log.scrollTop = log.scrollHeight;
+            console.log(message);
+        }
+
+        function updateProgress(percent, step) {
+            progressBar.style.width = `${percent}%`;
+            currentStep.textContent = step;
+        }
+
+        async function runMigration() {
+            logMessage("🚀 Starting multi-college migration...");
+            
+            let defaultCollegeId;
+            
+            try {
+                // Step 1: Create default college (20%)
+                updateProgress(10, "Creating default college...");
+                logMessage("Step 1: Creating default college...");
+                defaultCollegeId = await createDefaultCollege();
+                logMessage(`✅ Default college created: ${defaultCollegeId}`);
+                updateProgress(20, "Default college created");
+                
+                // Step 2: Migrate users (50%)
+                updateProgress(30, "Migrating users...");
+                logMessage("Step 2: Migrating users...");
+                await migrateUsers(defaultCollegeId);
+                logMessage("✅ Users migrated successfully");
+                updateProgress(50, "Users migrated");
+                
+                // Step 3: Migrate collections (90%)
+                const collections = [
+                    "attendanceRecords",
+                    "attendanceSettings", 
+                    "manualRequests",
+                    "permissionRequests",
+                    "notifications",
+                    "holidays",
+                    "settings",
+                    "profileUpdateRequests"
+                ];
+                
+                let collectionProgress = 50;
+                const progressPerCollection = 40 / collections.length;
+                
+                for (const collectionName of collections) {
+                    updateProgress(collectionProgress, `Migrating ${collectionName}...`);
+                    logMessage(`Step 3: Migrating ${collectionName}...`);
+                    
+                    try {
+                        await migrateCollection(collectionName, defaultCollegeId);
+                        logMessage(`✅ ${collectionName} migrated successfully`);
+                    } catch (error) {
+                        logMessage(`⚠️ Failed to migrate ${collectionName}: ${error.message}`);
+                    }
+                    
+                    collectionProgress += progressPerCollection;
+                }
+                
+                // Complete (100%)
+                updateProgress(100, "Migration completed successfully!");
+                logMessage("🎉 Migration completed successfully!");
+                logMessage(`Default college ID: ${defaultCollegeId}`);
+                logMessage("Next steps:");
+                logMessage("1. Update the default college information");
+                logMessage("2. Create additional colleges as needed");
+                logMessage("3. Test the multi-college functionality");
+                
+                // Show success message
+                const successDiv = document.createElement('div');
+                successDiv.className = 'success';
+                successDiv.innerHTML = `
+                    <h3>✅ Migration Successful!</h3>
+                    <p>Your system now supports multiple colleges. You can:</p>
+                    <ul>
+                        <li><a href="college-management.html">Manage colleges</a></li>
+                        <li><a href="college-admin-dashboard.html">Access admin dashboard</a></li>
+                        <li>Create invitations for new colleges</li>
+                    </ul>
+                `;
+                document.querySelector('.container').appendChild(successDiv);
+                
+            } catch (error) {
+                updateProgress(0, "Migration failed");
+                logMessage(`❌ Migration failed: ${error.message}`);
+                
+                if (error.message.includes('permissions') || error.message.includes('Missing or insufficient permissions')) {
+                    logMessage("💡 This looks like a Firestore rules issue.");
+                    logMessage("Please update your Firestore rules first:");
+                    logMessage("1. Go to Firebase Console → Firestore → Rules");
+                    logMessage("2. Copy rules from firestore.rules file");
+                    logMessage("3. Paste and publish the rules");
+                    logMessage("4. Then try migration again");
+                    
+                    const rulesDiv = document.createElement('div');
+                    rulesDiv.className = 'warning';
+                    rulesDiv.innerHTML = `
+                        <h3>⚠️ Firestore Rules Update Required</h3>
+                        <p>The migration failed due to insufficient permissions. Please:</p>
+                        <ol>
+                            <li>Go to <a href="https://console.firebase.google.com" target="_blank">Firebase Console</a></li>
+                            <li>Navigate to Firestore Database → Rules</li>
+                            <li>Copy the rules from the <code>firestore.rules</code> file</li>
+                            <li>Paste and publish the new rules</li>
+                            <li>Come back and try migration again</li>
+                        </ol>
+                        <div style="margin-top: 1rem;">
+                            <button onclick="window.location.href='initialize-colleges.html'">Use Initialization Wizard</button>
+                        </div>
+                    `;
+                    document.querySelector('.container').appendChild(rulesDiv);
+                }
+                
+                throw error;
+            }
+        }
+
+        // Migration functions embedded directly
+        async function createDefaultCollege() {
+            const { addDoc, query, where, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+            
+            console.log("Creating default college...");
+            
+            try {
+                // Check if default college already exists
+                const existingQuery = query(collection(db, "colleges"), where("code", "==", "DEFAULT"));
+                const existingSnap = await getDocs(existingQuery);
+                
+                if (!existingSnap.empty) {
+                    const defaultCollegeId = existingSnap.docs[0].id;
+                    console.log("Default college already exists:", defaultCollegeId);
+                    return defaultCollegeId;
+                }
+                
+                // Create default college
+                const DEFAULT_COLLEGE = {
+                    name: "Default College",
+                    code: "DEFAULT",
+                    email: "admin@defaultcollege.edu",
+                    address: "Update this address",
+                    phone: "+1234567890",
+                    website: "",
+                    gpsSettings: {
+                        latitude: null,
+                        longitude: null,
+                        radius: 100
+                    },
+                    settings: {
+                        timezone: "Asia/Kolkata",
+                        academicYear: "2024-25",
+                        workingDays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
+                        sessionTimings: {
+                            forenoon: { start: "09:00", end: "12:00" },
+                            afternoon: { start: "13:00", end: "16:00" }
+                        }
+                    },
+                    isActive: true,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp()
+                };
+                
+                const collegeRef = await addDoc(collection(db, "colleges"), DEFAULT_COLLEGE);
+                const defaultCollegeId = collegeRef.id;
+                
+                console.log("Default college created:", defaultCollegeId);
+                return defaultCollegeId;
+                
+            } catch (error) {
+                console.error("Error creating default college:", error);
+                throw error;
+            }
+        }
+
+        async function migrateUsers(defaultCollegeId) {
+            const { writeBatch, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+            
+            console.log("Migrating users...");
+            
+            try {
+                const usersSnap = await getDocs(collection(db, "users"));
+                const batch = writeBatch(db);
+                let updateCount = 0;
+                
+                for (const userDoc of usersSnap.docs) {
+                    const userData = userDoc.data();
+                    
+                    // Skip if already has collegeId
+                    if (userData.collegeId) {
+                        continue;
+                    }
+                    
+                    // Add college information
+                    const userRef = doc(db, "users", userDoc.id);
+                    batch.update(userRef, {
+                        collegeId: defaultCollegeId,
+                        collegeName: "Default College",
+                        updatedAt: serverTimestamp()
+                    });
+                    
+                    updateCount++;
+                    
+                    // Commit batch every 500 operations (Firestore limit)
+                    if (updateCount % 500 === 0) {
+                        await batch.commit();
+                        console.log(`Updated ${updateCount} users so far...`);
+                    }
+                }
+                
+                // Commit remaining operations
+                if (updateCount % 500 !== 0) {
+                    await batch.commit();
+                }
+                
+                console.log(`Successfully migrated ${updateCount} users`);
+                
+            } catch (error) {
+                console.error("Error migrating users:", error);
+                throw error;
+            }
+        }
+
+        async function migrateCollection(collectionName, defaultCollegeId, batchSize = 500) {
+            const { writeBatch, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+            
+            console.log(`Migrating ${collectionName}...`);
+            
+            try {
+                const collectionSnap = await getDocs(collection(db, collectionName));
+                const batch = writeBatch(db);
+                let updateCount = 0;
+                
+                for (const docSnapshot of collectionSnap.docs) {
+                    const docData = docSnapshot.data();
+                    
+                    // Skip if already has collegeId
+                    if (docData.collegeId) {
+                        continue;
+                    }
+                    
+                    // Add college information
+                    const docRef = doc(db, collectionName, docSnapshot.id);
+                    batch.update(docRef, {
+                        collegeId: defaultCollegeId,
+                        updatedAt: serverTimestamp()
+                    });
+                    
+                    updateCount++;
+                    
+                    // Commit batch every batchSize operations
+                    if (updateCount % batchSize === 0) {
+                        await batch.commit();
+                        console.log(`Updated ${updateCount} ${collectionName} documents so far...`);
+                    }
+                }
+                
+                // Commit remaining operations
+                if (updateCount % batchSize !== 0) {
+                    await batch.commit();
+                }
+                
+                console.log(`Successfully migrated ${updateCount} ${collectionName} documents`);
+                
+            } catch (error) {
+                console.error(`Error migrating ${collectionName}:`, error);
+                throw error;
+            }
+        }
+
+        // Make functions available globally for debugging
+        window.logMessage = logMessage;
+        window.updateProgress = updateProgress;
+    </script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link rel="stylesheet" href="login.css">
+</head>
+
+<body class="auth-page">
+
+  <div class="container">
+    <h2>Login</h2>
+
+    <input id="email" type="email" placeholder="Email">
+    <div class="password-field">
+      <input id="password" type="password" placeholder="Password">
+      <button type="button" class="password-toggle" data-target="password" aria-label="Show password">👁</button>
+    </div>
+
+    <button id="loginBtn">Login</button>
+    
+    <div class="forgot-password-section">
+      <a href="#" id="forgotPasswordLink" class="disabled">Forgot Password?</a>
+    </div>
+    
+    <p id="status"></p>
+  </div>
+
+  <!-- Loading Screen for Redirect -->
+  <div id="redirectLoading" class="redirect-loading hidden">
+    <div class="redirect-container">
+      <div class="redirect-icon">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle class="loading-circle-bg" cx="40" cy="40" r="36" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+          <circle class="loading-circle-progress" cx="40" cy="40" r="36" fill="none" stroke="url(#gradient)" stroke-width="4" stroke-linecap="round"/>
+          <defs>
+            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="redirect-icon-text">CAM</div>
+      </div>
+      <h2 class="redirect-title">Welcome Back!</h2>
+      <p class="redirect-subtitle">Redirecting to your dashboard...</p>
+      <div class="redirect-dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forgot Password Modal -->
+  <div id="forgotPasswordModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Reset Password</h3>
+      <p>Enter your email address and we'll send you a link to reset your password.</p>
+      <input id="resetEmail" type="email" placeholder="Enter your email">
+      <button id="sendResetBtn">Send Reset Link</button>
+      <p id="resetStatus"></p>
+    </div>
+  </div>
+
+  <script type="module" src="login.js"></script>
+  <script>
+    // Prevent back navigation to previous pages - always redirect to index
+    window.history.pushState(null, "", window.location.href);
+    window.onpopstate = function() {
+      window.history.pushState(null, "", window.location.href);
+      window.location.href = "index.html";
+    };
+  </script>
+</body>
+</html>

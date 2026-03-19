@@ -1,0 +1,200 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ================= HELPER FUNCTIONS ================= */
+
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function getUserCollege() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.collegeId;
+    }
+
+    function isAdmin() {
+      return isLoggedIn() && (
+        getUserRole() in ['admin', 'Admin'] || 
+        getUserRole() in ['principal', 'Principal'] || 
+        getUserRole() in ['superadmin', 'SuperAdmin']
+      );
+    }
+
+    function isStaff() {
+      return isLoggedIn() && getUserRole() in ['admin','Admin','principal','Principal','incharge','Incharge','hod','HOD','superadmin','SuperAdmin'];
+    }
+
+    function isStudent() {
+      return isLoggedIn() && getUserRole() in ['student', 'Student'];
+    }
+
+    function isSuperAdmin() {
+      return isLoggedIn() && getUserRole() in ['superadmin', 'SuperAdmin'];
+    }
+
+    function isSameCollege(collegeId) {
+      return getUserCollege() == collegeId;
+    }
+
+    /* ================= COLLEGES ================= */
+
+    match /colleges/{collegeId} {
+      allow read: if isLoggedIn() || resource.data.isActive == true;
+      allow create, delete: if isSuperAdmin();
+      // SuperAdmin can update anything; college admin/principal can only update backgroundImage
+      allow update: if isSuperAdmin() ||
+                    (isAdmin() && isSameCollege(collegeId) &&
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['backgroundImage']));
+
+      match /holidays/{id} {
+        allow read: if isLoggedIn();
+      }
+      match /settings/{id} {
+        allow read: if isLoggedIn();
+        allow create, update, delete: if (isAdmin() && isSameCollege(collegeId)) || isSuperAdmin();
+      }
+    }
+
+    /* ================= USERS ================= */
+
+    match /users/{userId} {
+      allow read: if isLoggedIn() && (
+        request.auth.uid == userId || 
+        isStaff() || 
+        resource.data.role in ['incharge', 'hod']
+      );
+
+      allow create: if isLoggedIn() && request.auth.uid == userId;
+
+      allow update: if request.auth.uid == userId || 
+                    (isAdmin() && isSameCollege(resource.data.collegeId)) ||
+                    isSuperAdmin();
+
+      allow delete: if isAdmin() && isSameCollege(resource.data.collegeId) || isSuperAdmin();
+    }
+
+    /* ================= ATTENDANCE RECORDS ================= */
+
+    match /attendanceRecords/{recordId} {
+      allow read: if (isStaff() && isSameCollege(resource.data.collegeId)) || 
+                     request.auth.uid == resource.data.studentUid ||
+                     isSuperAdmin();
+      allow create: if isLoggedIn() && isSameCollege(request.resource.data.collegeId);
+      allow update, delete: if (isAdmin() && isSameCollege(resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    match /attendance/{studentId} {
+      allow read: if (isAdmin() && isSameCollege(get(/databases/$(database)/documents/users/$(studentId)).data.collegeId)) || 
+                     request.auth.uid == studentId ||
+                     isSuperAdmin();
+      
+      match /records/{recordId} {
+        allow read: if (isAdmin() && isSameCollege(get(/databases/$(database)/documents/users/$(studentId)).data.collegeId)) || 
+                       request.auth.uid == studentId ||
+                       isSuperAdmin();
+        allow create: if isLoggedIn() && request.auth.uid == studentId;
+        allow update, delete: if (isAdmin() && isSameCollege(get(/databases/$(database)/documents/users/$(studentId)).data.collegeId)) || 
+                               isSuperAdmin();
+      }
+    }
+
+    /* ================= ATTENDANCE SETTINGS ================= */
+
+    match /attendanceSettings/{date} {
+      allow read: if isLoggedIn();
+      allow write: if (isAdmin() && isSameCollege(request.resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    /* ================= MANUAL REQUESTS ================= */
+
+    match /manualRequests/{requestId} {
+      allow create: if isLoggedIn();
+      allow read: if (isAdmin() && isSameCollege(resource.data.collegeId)) || 
+                     request.auth.uid == resource.data.userId ||
+                     isSuperAdmin();
+      allow update, delete: if (isAdmin() && isSameCollege(resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    /* ================= PERMISSION REQUESTS ================= */
+
+    match /permissionRequests/{id} {
+      allow create: if isLoggedIn();
+      allow read: if (isAdmin() && isSameCollege(resource.data.collegeId)) || isSuperAdmin();
+      allow update, delete: if (isAdmin() && isSameCollege(resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    /* ================= NOTIFICATIONS ================= */
+
+    match /notifications/{notificationId} {
+      allow read: if request.auth.uid == resource.data.userId || 
+                     (isAdmin() && isSameCollege(resource.data.collegeId)) ||
+                     isSuperAdmin();
+      allow create: if (isAdmin() && isSameCollege(request.resource.data.collegeId)) || isSuperAdmin();
+      allow update: if request.auth.uid == resource.data.userId;
+      allow delete: if (isAdmin() && isSameCollege(resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    /* ================= HOLIDAYS ================= */
+
+    match /holidays/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if (isAdmin() && isSameCollege(request.resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    /* ================= SETTINGS ================= */
+
+    match /settings/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if (isAdmin() && isSameCollege(request.resource.data.collegeId)) || isSuperAdmin();
+    }
+
+    /* ================= PROFILE UPDATE REQUESTS ================= */
+
+    match /profileUpdateRequests/{requestId} {
+      allow create: if isLoggedIn();
+      allow read: if (isAdmin() && isSameCollege(resource.data.collegeId)) || 
+                     isStaff() || 
+                     request.auth.uid == resource.data.uid ||
+                     isSuperAdmin();
+      allow update, delete: if (isAdmin() && isSameCollege(resource.data.collegeId)) || 
+                             isStaff() ||
+                             isSuperAdmin();
+    }
+
+    /* ================= SYSTEM SETTINGS ================= */
+
+    match /system/{docId} {
+      // Public read — login/register pages need this without auth
+      allow read: if true;
+      // Only super admin can write
+      allow write: if isSuperAdmin();
+    }
+
+    /* ================= ONLINE PRESENCE ================= */
+
+    match /onlinePresence/{uid} {
+      allow read: if isLoggedIn();
+      allow write: if isLoggedIn() && request.auth.uid == uid;
+    }
+
+    /* ================= ADMIN INVITES ================= */
+    match /adminInvites/{inviteId} {
+      // 1. Logged in users (Admins) can list and read all (for audit log)
+      allow read: if request.auth != null;
+      // 2. Unauthenticated users can FETCH a specific invitation if they know the ID (the token)
+      allow get: if true;
+                  
+      allow create, delete: if isAdmin() || isSuperAdmin();
+      
+      allow update: if request.auth != null || 
+                    (resource.data.used == false && 
+                     request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedAt', 'registeredUid', 'usedBy']) &&
+                     request.resource.data.used == true);
+    }
+
+  }
+}

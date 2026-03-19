@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Management - Multi-College System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #1e293b;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .colleges-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .college-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .college-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .college-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .college-logo {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .college-info h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .college-code {
+            font-size: 0.875rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .college-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .stat {
+            text-align: center;
+            padding: 0.75rem;
+            background: #f8fafc;
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .college-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-sm {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 0.875rem;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #64748b;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 0.5rem;
+            color: #374151;
+        }
+
+        @media (max-width: 768px) {
+            .colleges-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
+        /* SEARCH STYLES */
+        .search-container {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .search-container input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-container input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-icon {
+            color: #64748b;
+            font-size: 1.25rem;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header">
+        <h1>🏫 College Management</h1>
+        <button class="btn btn-primary" onclick="openAddCollegeModal()">
+            + Add New College
+        </button>
+    </header>
+
+    <div class="container">
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="collegeSearch" placeholder="Search colleges by name or code...">
+        </div>
+        <div id="collegesContainer">
+            <div class="empty-state">
+                <h3>Loading colleges...</h3>
+                <p>Please wait while we fetch the college data.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit College Modal -->
+    <div id="collegeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Add New College</h2>
+                <button class="close-btn" onclick="closeCollegeModal()">&times;</button>
+            </div>
+
+            <form id="collegeForm">
+                <div class="form-group">
+                    <label for="collegeName">College Name *</label>
+                    <input type="text" id="collegeName" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="collegeCode">College Code *</label>
+                        <input type="text" id="collegeCode" required placeholder="e.g., ABC_ENG">
+                    </div>
+                    <div class="form-group">
+                        <label for="collegeEmail">Email *</label>
+                        <input type="email" id="collegeEmail" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="collegeAddress">Address</label>
+                    <textarea id="collegeAddress" rows="3"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="collegePhone">Phone</label>
+                        <input type="tel" id="collegePhone">
+                    </div>
+                    <div class="form-group">
+                        <label for="collegeWebsite">Website</label>
+                        <input type="url" id="collegeWebsite" placeholder="https://...">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gpsLatitude">GPS Latitude</label>
+                        <input type="number" id="gpsLatitude" step="any" placeholder="Enter college latitude">
+                        <small style="color: #64748b; font-size: 0.75rem;">College admin should provide the exact campus
+                            location</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="gpsLongitude">GPS Longitude</label>
+                        <input type="number" id="gpsLongitude" step="any" placeholder="Enter college longitude">
+                        <small style="color: #64748b; font-size: 0.75rem;">Required for location-based
+                            attendance</small>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div
+                        style="background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 6px; padding: 1rem; margin-bottom: 1rem;">
+                        <h4 style="color: #0369a1; margin-bottom: 0.5rem;">📍 GPS Location Setup</h4>
+                        <p style="color: #0369a1; font-size: 0.875rem; margin-bottom: 0.5rem;">
+                            The college admin should provide the exact GPS coordinates of the campus for accurate
+                            attendance tracking.
+                        </p>
+                        <button type="button" class="btn btn-secondary" onclick="getCurrentLocation()"
+                            style="font-size: 0.875rem;">
+                            📍 Use Current Location (for reference only)
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="gpsRadius">GPS Radius (meters)</label>
+                    <input type="number" id="gpsRadius" value="100" min="10" max="1000">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fnStart">Forenoon Start</label>
+                        <input type="time" id="fnStart" value="09:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="fnEnd">Forenoon End</label>
+                        <input type="time" id="fnEnd" value="12:00">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="anStart">Afternoon Start</label>
+                        <input type="time" id="anStart" value="13:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="anEnd">Afternoon End</label>
+                        <input type="time" id="anEnd" value="16:00">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeCollegeModal()">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        Save College
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="college-management.js"></script>
+</body>
+
+</html>

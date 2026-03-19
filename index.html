@@ -1,0 +1,3567 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>College Attendance Management System</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --primary-light: #3b82f6;
+      --secondary: #64748b;
+      --accent: #0ea5e9;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --bg: #f8fafc;
+      --bg-secondary: #f1f5f9;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-light: #94a3b8;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ===== PROFESSIONAL INTRO ===== */
+    .intro-overlay {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(14, 165, 233, 0.28), transparent 28%),
+        radial-gradient(circle at 80% 18%, rgba(16, 185, 129, 0.18), transparent 24%),
+        radial-gradient(circle at 50% 80%, rgba(255, 255, 255, 0.08), transparent 22%),
+        linear-gradient(135deg, #0f172a 0%, #1d4ed8 42%, #0ea5e9 100%);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1), transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow: hidden;
+    }
+
+    .intro-overlay.morph-exit {
+      opacity: 0;
+      transform: scale(1.04);
+      pointer-events: none;
+    }
+
+    .intro-overlay::before,
+    .intro-overlay::after {
+      content: "";
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(24px);
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .intro-overlay::before {
+      width: 280px;
+      height: 280px;
+      top: 10%;
+      left: 8%;
+      background: rgba(59, 130, 246, 0.26);
+      animation: drift-orb 9s ease-in-out infinite;
+    }
+
+    .intro-overlay::after {
+      width: 240px;
+      height: 240px;
+      right: 10%;
+      bottom: 12%;
+      background: rgba(16, 185, 129, 0.18);
+      animation: drift-orb 11s ease-in-out infinite reverse;
+    }
+
+    .intro-content {
+      text-align: center;
+      color: white;
+      transform: translateY(0);
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+      position: relative;
+      z-index: 2;
+    }
+
+    .intro-overlay.morph-exit .intro-content {
+      transform: translateY(-36px) scale(0.98);
+      opacity: 0;
+    }
+
+    .intro-logo-animated {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 2rem;
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .intro-overlay.morph-exit .intro-logo-animated {
+      transform: scale(0.72);
+      opacity: 0;
+    }
+
+    .logo-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .ring-outer {
+      width: 120px;
+      height: 120px;
+      animation: ring-spin 4s linear infinite;
+      border-top-color: rgba(255, 255, 255, 0.8);
+    }
+
+    .ring-middle {
+      width: 90px;
+      height: 90px;
+      animation: ring-spin 3s linear infinite reverse;
+      border-right-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .ring-inner {
+      width: 60px;
+      height: 60px;
+      animation: ring-spin 2s linear infinite;
+      border-bottom-color: rgba(255, 255, 255, 0.9);
+    }
+
+    .logo-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 50px;
+      height: 50px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      backdrop-filter: blur(10px);
+      animation: logo-pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+    }
+
+    .intro-grid-glow {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: radial-gradient(circle at center, rgba(0, 0, 0, 0.85), transparent 78%);
+      opacity: 0.4;
+      animation: grid-pulse 6s ease-in-out infinite;
+    }
+
+    @keyframes ring-spin {
+      0% { transform: translate(-50%, -50%) rotate(0deg); }
+      100% { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+
+    @keyframes logo-pulse {
+      0%, 100% { 
+        transform: translate(-50%, -50%) scale(1);
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+      }
+      50% { 
+        transform: translate(-50%, -50%) scale(1.1);
+        box-shadow: 0 0 50px rgba(255, 255, 255, 0.6);
+      }
+    }
+
+    @keyframes drift-orb {
+      0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+      50% { transform: translate3d(18px, -14px, 0) scale(1.08); }
+    }
+
+    @keyframes grid-pulse {
+      0%, 100% { opacity: 0.24; transform: scale(1); }
+      50% { opacity: 0.42; transform: scale(1.02); }
+    }
+
+    .intro-features {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+      opacity: 0;
+      animation: intro-slide-up 0.8s ease 0.9s forwards;
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .intro-feature-tag {
+      padding: 0.5rem 1rem;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      backdrop-filter: blur(10px);
+      animation: tag-float 3s ease-in-out infinite;
+    }
+
+    .intro-feature-tag:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .intro-feature-tag:nth-child(2) {
+      animation-delay: 0.3s;
+    }
+
+    .intro-feature-tag:nth-child(3) {
+      animation-delay: 0.6s;
+    }
+
+    @keyframes tag-float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .intro-overlay.morph-exit .intro-features {
+      transform: translateY(-30px);
+      opacity: 0;
+    }
+
+    .intro-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      opacity: 0;
+      animation: intro-slide-up 0.8s ease 0.3s forwards;
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .intro-overlay.morph-exit .intro-title {
+      transform: translateY(-30px);
+      opacity: 0;
+    }
+
+    .intro-subtitle {
+      font-size: 1.125rem;
+      opacity: 0.9;
+      margin-bottom: 3rem;
+      opacity: 0;
+      animation: intro-slide-up 0.8s ease 0.6s forwards;
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .intro-overlay.morph-exit .intro-subtitle {
+      transform: translateY(-30px);
+      opacity: 0;
+    }
+
+    .intro-progress-container {
+      width: 260px;
+      margin: 0 auto;
+      transition: all 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .intro-overlay.morph-exit .intro-progress-container {
+      transform: translateY(-30px);
+      opacity: 0;
+    }
+
+    .intro-progress-bar {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: 1rem;
+    }
+
+    .intro-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #ffffff, rgba(186, 230, 253, 0.95), rgba(255, 255, 255, 0.85));
+      width: 0%;
+      border-radius: 2px;
+      animation: intro-progress 2.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      box-shadow: 0 0 16px rgba(255, 255, 255, 0.48);
+    }
+
+    .intro-status {
+      font-size: 0.875rem;
+      opacity: 0.8;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      min-height: 22px;
+      transition: all 0.35s ease, opacity 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .intro-overlay.morph-exit .intro-status {
+      transform: translateY(-30px);
+      opacity: 0;
+    }
+
+    @keyframes intro-slide-up {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+    }
+
+    @keyframes intro-progress {
+      0% { width: 0%; }
+      20% { width: 30%; }
+      50% { width: 60%; }
+      80% { width: 85%; }
+      100% { width: 100%; }
+    }
+
+    /* ===== MAIN CONTENT MORPHING ANIMATION ===== */
+    .main-content {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 2s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    .main-content.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== MORPHING PARTICLES EFFECT ===== */
+    .morph-particles {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .morph-particles.active {
+      opacity: 1;
+    }
+
+    .particle {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--primary);
+      animation: morph-particle 2s ease-out forwards;
+    }
+
+    @keyframes morph-particle {
+      0% {
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(0) translateY(-150px);
+        opacity: 0;
+      }
+    }
+
+    /* ===== HEADER MORPH ANIMATION ===== */
+    .header {
+      transform: translateY(0);
+      opacity: 0;
+      transition: all 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.3s;
+    }
+
+    .main-content.visible .header {
+      opacity: 1;
+    }
+
+    /* ===== HERO CONTENT MORPH ANIMATION ===== */
+    .hero-content {
+      transform: translateX(0);
+      opacity: 0;
+      transition: all 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.5s;
+    }
+
+    .main-content.visible .hero-content {
+      opacity: 1;
+    }
+
+    /* ===== AUTH CARD MORPH ANIMATION ===== */
+    .auth-card {
+      transform: translateX(0);
+      opacity: 0;
+      transition: all 1.5s cubic-bezier(0.65, 0, 0.35, 1) 0.7s;
+    }
+
+    .main-content.visible .auth-card {
+      opacity: 1;
+    }
+
+    /* ===== SECTIONS STYLING ===== */
+    .section-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    .section-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+
+    .section-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* ===== FEATURES SECTION ===== */
+    .features-section {
+      padding: 6rem 0;
+      background: var(--bg-secondary);
+    }
+
+    .features-detailed-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: all 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--primary);
+    }
+
+    .feature-card-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    /* ===== 3D FACIAL RECOGNITION ICON ===== */
+    .facial-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .face-scanner {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 4s ease-in-out infinite;
+    }
+
+    .face-outline {
+      position: absolute;
+      width: 60px;
+      height: 70px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 3px solid var(--primary);
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.2));
+      box-shadow: 
+        0 0 20px rgba(37, 99, 235, 0.3),
+        inset 0 0 20px rgba(37, 99, 235, 0.1);
+      animation: pulse-face 2s ease-in-out infinite;
+    }
+
+    .scan-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      top: 0;
+      left: 0;
+      animation: scan-vertical 3s ease-in-out infinite;
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .scan-dots {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .dot {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--accent);
+      animation: dot-pulse 2s ease-in-out infinite;
+    }
+
+    .dot-1 {
+      top: 20%;
+      left: 30%;
+      animation-delay: 0s;
+    }
+
+    .dot-2 {
+      top: 20%;
+      right: 30%;
+      animation-delay: 0.5s;
+    }
+
+    .dot-3 {
+      bottom: 30%;
+      left: 25%;
+      animation-delay: 1s;
+    }
+
+    .dot-4 {
+      bottom: 30%;
+      right: 25%;
+      animation-delay: 1.5s;
+    }
+
+    /* ===== 3D ANALYTICS ICON ===== */
+    .analytics-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .chart-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 5s ease-in-out infinite;
+    }
+
+    .bar {
+      position: absolute;
+      bottom: 20px;
+      width: 8px;
+      background: linear-gradient(to top, var(--primary), var(--accent));
+      border-radius: 4px 4px 0 0;
+      box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+      animation: bar-grow 3s ease-in-out infinite;
+    }
+
+    .bar-1 {
+      left: 15px;
+      height: 30px;
+      animation-delay: 0s;
+    }
+
+    .bar-2 {
+      left: 28px;
+      height: 45px;
+      animation-delay: 0.3s;
+    }
+
+    .bar-3 {
+      left: 41px;
+      height: 25px;
+      animation-delay: 0.6s;
+    }
+
+    .bar-4 {
+      left: 54px;
+      height: 40px;
+      animation-delay: 0.9s;
+    }
+
+    .chart-line {
+      position: absolute;
+      top: 25px;
+      left: 15px;
+      width: 50px;
+      height: 2px;
+      background: var(--accent);
+      animation: line-draw 4s ease-in-out infinite;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .data-points {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .point {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--accent);
+      animation: point-pulse 2s ease-in-out infinite;
+    }
+
+    .point-1 {
+      top: 30px;
+      left: 18px;
+      animation-delay: 0s;
+    }
+
+    .point-2 {
+      top: 20px;
+      left: 35px;
+      animation-delay: 0.7s;
+    }
+
+    .point-3 {
+      top: 35px;
+      left: 52px;
+      animation-delay: 1.4s;
+    }
+
+    /* ===== 3D GPS ICON ===== */
+    .gps-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .globe-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 8s linear infinite;
+    }
+
+    .globe {
+      position: absolute;
+      width: 65px;
+      height: 65px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: linear-gradient(135deg, 
+        rgba(37, 99, 235, 0.2) 0%, 
+        rgba(59, 130, 246, 0.3) 50%, 
+        rgba(96, 165, 250, 0.2) 100%);
+      border: 3px solid var(--primary);
+      box-shadow: 
+        0 0 25px rgba(37, 99, 235, 0.4),
+        inset 0 0 25px rgba(59, 130, 246, 0.2);
+      overflow: hidden;
+    }
+
+    .globe-surface {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, 
+        rgba(96, 165, 250, 0.3) 0%, 
+        rgba(37, 99, 235, 0.1) 70%);
+      animation: globe-shine 4s ease-in-out infinite;
+    }
+
+    .meridian-lines {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+    }
+
+    .meridian {
+      position: absolute;
+      background: var(--accent);
+      opacity: 0.8;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .vertical-1 {
+      width: 2px;
+      height: 100%;
+      left: 50%;
+      top: 0;
+      transform: translateX(-50%);
+      animation: meridian-pulse 3s ease-in-out infinite;
+    }
+
+    .vertical-2 {
+      width: 100%;
+      height: 2px;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      animation: meridian-pulse 3s ease-in-out infinite 0.5s;
+    }
+
+    .horizontal-1 {
+      width: 2px;
+      height: 80%;
+      left: 25%;
+      top: 10%;
+      transform: translateX(-50%) rotateZ(45deg);
+      animation: meridian-pulse 3s ease-in-out infinite 1s;
+    }
+
+    .horizontal-2 {
+      width: 2px;
+      height: 80%;
+      right: 25%;
+      top: 10%;
+      transform: translateX(50%) rotateZ(-45deg);
+      animation: meridian-pulse 3s ease-in-out infinite 1.5s;
+    }
+
+    .location-pin {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10px;
+      height: 14px;
+      background: var(--error);
+      border-radius: 50% 50% 50% 0;
+      transform-origin: bottom center;
+      animation: pin-bounce 2.5s ease-in-out infinite;
+      box-shadow: 0 0 12px var(--error);
+      z-index: 10;
+    }
+
+    .location-pin::before {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 6px;
+      height: 6px;
+      background: white;
+      border-radius: 50%;
+    }
+
+    .signal-waves {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .wave {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      opacity: 0;
+      animation: wave-expand 4s ease-out infinite;
+    }
+
+    .wave-1 {
+      animation-delay: 0s;
+    }
+
+    .wave-2 {
+      animation-delay: 1.3s;
+    }
+
+    .wave-3 {
+      animation-delay: 2.6s;
+    }
+
+    /* ===== 3D TIMING ICON ===== */
+    .timing-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .clock-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 8s ease-in-out infinite;
+    }
+
+    .clock-face {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      border: 3px solid var(--primary);
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.2));
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.3);
+    }
+
+    .hour-hand {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 3px;
+      height: 15px;
+      background: var(--primary);
+      transform-origin: bottom center;
+      transform: translate(-50%, -100%) rotate(45deg);
+      border-radius: 2px;
+      animation: hour-rotate 12s linear infinite;
+    }
+
+    .minute-hand {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 2px;
+      height: 20px;
+      background: var(--accent);
+      transform-origin: bottom center;
+      transform: translate(-50%, -100%) rotate(90deg);
+      border-radius: 1px;
+      animation: minute-rotate 2s linear infinite;
+    }
+
+    .center-dot {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 0 8px var(--primary);
+    }
+
+    .time-markers {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .marker {
+      position: absolute;
+      width: 2px;
+      height: 8px;
+      background: var(--primary);
+      border-radius: 1px;
+    }
+
+    .marker-12 {
+      top: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .marker-3 {
+      right: 2px;
+      top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+    }
+
+    .marker-6 {
+      bottom: 2px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .marker-9 {
+      left: 2px;
+      top: 50%;
+      transform: translateY(-50%) rotate(90deg);
+    }
+
+    /* ===== 3D SECURITY ICON ===== */
+    .security-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .lock-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 5s ease-in-out infinite;
+    }
+
+    .lock-body {
+      position: absolute;
+      width: 40px;
+      height: 35px;
+      left: 50%;
+      top: 60%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .lock-shackle {
+      position: absolute;
+      width: 25px;
+      height: 20px;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 4px solid var(--primary);
+      border-bottom: none;
+      border-radius: 15px 15px 0 0;
+      animation: shackle-unlock 4s ease-in-out infinite;
+    }
+
+    .keyhole {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg);
+      border-radius: 50% 50% 0 0;
+      box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .keyhole::after {
+      content: '';
+      position: absolute;
+      width: 3px;
+      height: 8px;
+      top: 6px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--bg);
+      border-radius: 0 0 2px 2px;
+    }
+
+    .security-rings {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid var(--accent);
+      border-radius: 50%;
+      opacity: 0;
+      animation: security-pulse 3s ease-out infinite;
+    }
+
+    .ring-1 {
+      width: 60px;
+      height: 60px;
+      animation-delay: 0s;
+    }
+
+    .ring-2 {
+      width: 75px;
+      height: 75px;
+      animation-delay: 1s;
+    }
+
+    .ring-3 {
+      width: 90px;
+      height: 90px;
+      animation-delay: 2s;
+    }
+
+    @keyframes rotate3d {
+      0%, 100% {
+        transform: rotateY(0deg) rotateX(0deg);
+      }
+      25% {
+        transform: rotateY(15deg) rotateX(5deg);
+      }
+      50% {
+        transform: rotateY(0deg) rotateX(10deg);
+      }
+      75% {
+        transform: rotateY(-15deg) rotateX(5deg);
+      }
+    }
+
+    @keyframes pulse-face {
+      0%, 100% {
+        border-color: var(--primary);
+        box-shadow: 
+          0 0 20px rgba(37, 99, 235, 0.3),
+          inset 0 0 20px rgba(37, 99, 235, 0.1);
+      }
+      50% {
+        border-color: var(--accent);
+        box-shadow: 
+          0 0 30px rgba(96, 165, 250, 0.5),
+          inset 0 0 30px rgba(96, 165, 250, 0.2);
+        transform: translate(-50%, -50%) scale(1.05);
+      }
+    }
+
+    @keyframes scan-vertical {
+      0% {
+        top: 0;
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        top: calc(100% - 2px);
+        opacity: 0;
+      }
+    }
+
+    /* ===== 3D MOBILE ICON ===== */
+    .mobile-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .phone-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 4s ease-in-out infinite;
+    }
+
+    .phone-body {
+      position: absolute;
+      width: 35px;
+      height: 60px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .phone-screen {
+      position: absolute;
+      width: 28px;
+      height: 45px;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), rgba(59, 130, 246, 0.3));
+      border-radius: 4px;
+      border: 1px solid var(--accent);
+      animation: screen-glow 3s ease-in-out infinite;
+    }
+
+    .screen-content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      padding: 4px;
+    }
+
+    .app-icon {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: app-blink 2s ease-in-out infinite;
+    }
+
+    .app-1 {
+      top: 6px;
+      left: 4px;
+      animation-delay: 0s;
+    }
+
+    .app-2 {
+      top: 6px;
+      right: 4px;
+      animation-delay: 0.7s;
+    }
+
+    .app-3 {
+      top: 16px;
+      left: 4px;
+      animation-delay: 1.4s;
+    }
+
+    .notification-dot {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 3px;
+      height: 3px;
+      background: var(--error);
+      border-radius: 50%;
+      animation: notification-pulse 1.5s ease-in-out infinite;
+    }
+
+    .phone-button {
+      position: absolute;
+      bottom: 4px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 12px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: button-press 4s ease-in-out infinite;
+    }
+
+    /* ===== 3D SPEED ICON ===== */
+    .speed-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .lightning-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 3s ease-in-out infinite;
+    }
+
+    .lightning-bolt {
+      position: absolute;
+      width: 30px;
+      height: 50px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .bolt-segment {
+      position: absolute;
+      background: linear-gradient(45deg, var(--warning), var(--accent));
+      animation: lightning-flash 2s ease-in-out infinite;
+    }
+
+    .segment-1 {
+      width: 12px;
+      height: 20px;
+      top: 0;
+      left: 8px;
+      clip-path: polygon(0 0, 100% 0, 60% 100%, 0 80%);
+      animation-delay: 0s;
+    }
+
+    .segment-2 {
+      width: 15px;
+      height: 18px;
+      top: 16px;
+      left: 0;
+      clip-path: polygon(40% 0, 100% 20%, 100% 100%, 0 100%);
+      animation-delay: 0.3s;
+    }
+
+    .segment-3 {
+      width: 10px;
+      height: 16px;
+      top: 30px;
+      left: 12px;
+      clip-path: polygon(0 0, 100% 0, 80% 100%, 20% 100%);
+      animation-delay: 0.6s;
+    }
+
+    .energy-field {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .energy-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border: 2px solid var(--warning);
+      border-radius: 50%;
+      opacity: 0;
+      animation: energy-pulse 2s ease-out infinite;
+    }
+
+    .energy-ring.ring-1 {
+      width: 50px;
+      height: 50px;
+      animation-delay: 0s;
+    }
+
+    .energy-ring.ring-2 {
+      width: 65px;
+      height: 65px;
+      animation-delay: 0.7s;
+    }
+
+    .energy-ring.ring-3 {
+      width: 80px;
+      height: 80px;
+      animation-delay: 1.4s;
+    }
+
+    /* ===== 3D AUTOMATION ICON ===== */
+    .automation-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .robot-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 5s ease-in-out infinite;
+    }
+
+    .robot-head {
+      position: absolute;
+      width: 40px;
+      height: 35px;
+      left: 50%;
+      top: 40%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .robot-eye {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+      top: 8px;
+      animation: robot-blink 3s ease-in-out infinite;
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .eye-left {
+      left: 8px;
+      animation-delay: 0s;
+    }
+
+    .eye-right {
+      right: 8px;
+      animation-delay: 0.1s;
+    }
+
+    .robot-antenna {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 2px;
+      height: 8px;
+      background: var(--accent);
+      border-radius: 1px;
+      animation: antenna-signal 2s ease-in-out infinite;
+    }
+
+    .robot-antenna::after {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4px;
+      height: 4px;
+      background: var(--error);
+      border-radius: 50%;
+      animation: signal-blink 1s ease-in-out infinite;
+    }
+
+    .gear-system {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .gear {
+      position: absolute;
+      border: 3px solid var(--accent);
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(96, 165, 250, 0.1), rgba(59, 130, 246, 0.2));
+    }
+
+    .gear-1 {
+      width: 20px;
+      height: 20px;
+      bottom: 15px;
+      left: 20px;
+      animation: gear-rotate 3s linear infinite;
+    }
+
+    .gear-2 {
+      width: 15px;
+      height: 15px;
+      bottom: 20px;
+      right: 25px;
+      animation: gear-rotate 2s linear infinite reverse;
+    }
+
+    /* ===== 3D REPORTING ICON ===== */
+    .reporting-3d-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 1.5rem;
+      perspective: 200px;
+    }
+
+    .report-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      animation: rotate3d 6s ease-in-out infinite;
+    }
+
+    .document-stack {
+      position: absolute;
+      width: 35px;
+      height: 45px;
+      left: 40%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .document {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(59, 130, 246, 0.2));
+      border: 2px solid var(--primary);
+      border-radius: 4px;
+      animation: document-float 4s ease-in-out infinite;
+    }
+
+    .doc-1 {
+      z-index: 3;
+      animation-delay: 0s;
+    }
+
+    .doc-2 {
+      z-index: 2;
+      transform: translate(3px, 3px);
+      opacity: 0.8;
+      animation-delay: 0.5s;
+    }
+
+    .doc-3 {
+      z-index: 1;
+      transform: translate(6px, 6px);
+      opacity: 0.6;
+      animation-delay: 1s;
+    }
+
+    .trend-arrow {
+      position: absolute;
+      right: 15px;
+      top: 30px;
+      width: 25px;
+      height: 20px;
+    }
+
+    .arrow-body {
+      position: absolute;
+      width: 15px;
+      height: 3px;
+      background: var(--success);
+      top: 50%;
+      transform: translateY(-50%) rotate(-30deg);
+      border-radius: 2px;
+      animation: arrow-grow 3s ease-in-out infinite;
+    }
+
+    .arrow-head {
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%) rotate(-30deg);
+      width: 0;
+      height: 0;
+      border-left: 8px solid var(--success);
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      animation: arrow-pulse 2s ease-in-out infinite;
+    }
+
+    .data-visualization {
+      position: absolute;
+      bottom: 20px;
+      right: 10px;
+      width: 30px;
+      height: 20px;
+    }
+
+    .viz-line {
+      position: absolute;
+      width: 100%;
+      height: 2px;
+      background: var(--accent);
+      top: 50%;
+      transform: translateY(-50%);
+      animation: viz-draw 4s ease-in-out infinite;
+    }
+
+    .viz-dots {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .viz-dot {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      animation: viz-pulse 2s ease-in-out infinite;
+    }
+
+    .viz-dot.dot-1 {
+      left: 2px;
+      top: 8px;
+      animation-delay: 0s;
+    }
+
+    .viz-dot.dot-2 {
+      left: 13px;
+      top: 4px;
+      animation-delay: 0.7s;
+    }
+
+    .viz-dot.dot-3 {
+      right: 2px;
+      top: 2px;
+      animation-delay: 1.4s;
+    }
+
+    .feature-card-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+    }
+
+    .feature-card-description {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .feature-list li {
+      padding: 0.5rem 0;
+      color: var(--text-muted);
+      position: relative;
+      padding-left: 1.5rem;
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    /* ===== ABOUT SECTION ===== */
+    .about-section {
+      padding: 6rem 0;
+      background: var(--card-bg);
+    }
+
+    .about-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: start;
+    }
+
+    .about-description {
+      font-size: 1.125rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+      margin-bottom: 3rem;
+    }
+
+    .about-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .about-features h3 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .about-feature-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .about-feature {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .about-feature-icon {
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .about-visual {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .about-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .about-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+
+    .about-card-icon {
+      font-size: 1.5rem;
+    }
+
+    .about-card h4 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .about-card p {
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ===== CONTACT SECTION ===== */
+    .contact-section {
+      padding: 6rem 0;
+      background: var(--bg-secondary);
+    }
+
+    .contact-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+    }
+
+    .contact-info {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .contact-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .contact-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .contact-card h4 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .contact-card p {
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .contact-note {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .contact-form {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+    }
+
+    .contact-form h3 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 2rem;
+      color: var(--text);
+    }
+
+    .form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--text);
+      color: white;
+      padding: 3rem 0 1rem;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 3rem;
+      margin-bottom: 2rem;
+    }
+
+    .footer-brand p {
+      color: rgba(255, 255, 255, 0.7);
+      margin-top: 1rem;
+    }
+
+    .footer-links {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .footer-column h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: white;
+    }
+
+    .footer-column ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .footer-column li {
+      margin-bottom: 0.5rem;
+    }
+
+    .footer-column a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-column a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 2rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-bottom p {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .footer-legal {
+      display: flex;
+      gap: 2rem;
+    }
+
+    .footer-legal a {
+      color: rgba(255, 255, 255, 0.7);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+
+    .footer-legal a:hover {
+      color: white;
+    }
+
+    /* ===== HEADER ===== */
+    .header {
+      background: rgba(255, 255, 255, 0.35);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.25rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.2rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 4rem;
+      align-items: center;
+      min-height: calc(100vh - 80px);
+    }
+
+    .hero-content {
+      max-width: 600px;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-secondary);
+      color: var(--primary);
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-title {
+      font-size: 3.5rem;
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .hero-title .highlight {
+      color: var(--primary);
+    }
+
+    .hero-description {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+    }
+
+    .feature-icon {
+      width: 32px;
+      height: 32px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.875rem;
+    }
+
+    .feature-text {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ===== AUTH CARD ===== */
+    .auth-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-lg);
+      position: sticky;
+      top: 120px;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .auth-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin: 0 auto 1rem;
+    }
+
+    .auth-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .auth-subtitle {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .auth-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 500;
+      font-size: 0.875rem;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    }
+
+    .btn-secondary {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+      border-color: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 1.5rem 0;
+      color: var(--text-light);
+      font-size: 0.75rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider span {
+      padding: 0 1rem;
+    }
+
+    /* ===== ROLE MODAL ===== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(8px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      width: 100%;
+      max-width: 480px;
+      border-radius: 20px;
+      padding: 2rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .close-btn {
+      background: var(--bg-secondary);
+      border: none;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .modal-description {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .role-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .role-option {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.2s;
+    }
+
+    .role-option:hover {
+      background: var(--bg-secondary);
+      border-color: var(--primary);
+      transform: translateX(4px);
+    }
+
+    .role-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--bg-secondary);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+    }
+
+    .role-info {
+      flex: 1;
+    }
+
+    .role-name {
+      font-weight: 500;
+      font-size: 0.875rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .role-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .header-container {
+        padding: 0 1rem;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .main-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 2rem 1rem;
+        text-align: center;
+      }
+
+      .hero-title {
+        font-size: 2.5rem;
+      }
+
+      .hero-description {
+        font-size: 1.125rem;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .auth-card {
+        padding: 2rem;
+        position: static;
+      }
+
+      /* Sections responsive */
+      .section-container {
+        padding: 0 1rem;
+      }
+
+      .section-title {
+        font-size: 2rem;
+      }
+
+      .section-subtitle {
+        font-size: 1.125rem;
+      }
+
+      .features-detailed-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .about-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .about-stats {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+      }
+
+      .contact-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .contact-info {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .footer-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+      }
+
+      .footer-links {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .footer-legal {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .hero-title {
+        font-size: 2rem;
+      }
+
+      .auth-card {
+        padding: 1.5rem;
+        border-radius: 16px;
+      }
+
+      .modal-card {
+        padding: 1.5rem;
+        border-radius: 16px;
+      }
+
+      .feature-card {
+        padding: 1.5rem;
+      }
+
+      .about-stats {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+      }
+
+      .contact-form {
+        padding: 1.5rem;
+      }
+    }
+
+    /* ===== SMOOTH SCROLLING ===== */
+    html {
+      scroll-behavior: smooth;
+    }
+
+    /* ===== SECTION ANIMATIONS ===== */
+    .features-section,
+    .about-section,
+    .contact-section {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s ease;
+    }
+
+    .features-section.visible,
+    .about-section.visible,
+    .contact-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ===== KEYFRAME ANIMATIONS ===== */
+    @keyframes rotate3d {
+      0%, 100% {
+        transform: rotateY(0deg) rotateX(0deg);
+      }
+      25% {
+        transform: rotateY(15deg) rotateX(5deg);
+      }
+      50% {
+        transform: rotateY(0deg) rotateX(10deg);
+      }
+      75% {
+        transform: rotateY(-15deg) rotateX(5deg);
+      }
+    }
+
+    @keyframes pulse-face {
+      0%, 100% {
+        border-color: var(--primary);
+        box-shadow: 
+          0 0 20px rgba(37, 99, 235, 0.3),
+          inset 0 0 20px rgba(37, 99, 235, 0.1);
+      }
+      50% {
+        border-color: var(--accent);
+        box-shadow: 
+          0 0 30px rgba(96, 165, 250, 0.5),
+          inset 0 0 30px rgba(96, 165, 250, 0.2);
+        transform: translate(-50%, -50%) scale(1.05);
+      }
+    }
+
+    @keyframes scan-vertical {
+      0% {
+        top: 0;
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        top: calc(100% - 2px);
+        opacity: 0;
+      }
+    }
+
+    @keyframes dot-pulse {
+      0%, 100% {
+        opacity: 0.3;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.5);
+      }
+    }
+
+    @keyframes bar-grow {
+      0%, 100% {
+        transform: scaleY(1);
+        box-shadow: 0 0 10px rgba(37, 99, 235, 0.5);
+      }
+      50% {
+        transform: scaleY(1.3);
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.8);
+      }
+    }
+
+    @keyframes line-draw {
+      0% {
+        width: 0;
+        opacity: 0;
+      }
+      50% {
+        opacity: 1;
+      }
+      100% {
+        width: 50px;
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes point-pulse {
+      0%, 100% {
+        opacity: 0.5;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.5);
+      }
+    }
+
+    @keyframes meridian-rotate {
+      0%, 100% {
+        opacity: 0.6;
+      }
+      50% {
+        opacity: 1;
+        transform: rotateY(45deg) scale(1.1);
+      }
+    }
+
+    @keyframes meridian-pulse {
+      0%, 100% {
+        opacity: 0.4;
+        transform: translateX(-50%) scaleY(1);
+        box-shadow: 0 0 8px var(--accent);
+      }
+      50% {
+        opacity: 1;
+        transform: translateX(-50%) scaleY(1.1);
+        box-shadow: 0 0 15px var(--accent);
+      }
+    }
+
+    @keyframes globe-shine {
+      0%, 100% {
+        background: radial-gradient(circle at 30% 30%, 
+          rgba(96, 165, 250, 0.3) 0%, 
+          rgba(37, 99, 235, 0.1) 70%);
+      }
+      50% {
+        background: radial-gradient(circle at 70% 70%, 
+          rgba(96, 165, 250, 0.4) 0%, 
+          rgba(37, 99, 235, 0.2) 70%);
+      }
+    }
+
+    @keyframes pin-bounce {
+      0%, 100% {
+        transform: translateX(-50%) translateY(0) scale(1);
+      }
+      50% {
+        transform: translateX(-50%) translateY(-6px) scale(1.1);
+      }
+    }
+
+    @keyframes wave-expand {
+      0% {
+        width: 30px;
+        height: 30px;
+        opacity: 1;
+      }
+      100% {
+        width: 100px;
+        height: 100px;
+        opacity: 0;
+      }
+    }
+
+    @keyframes hour-rotate {
+      0% {
+        transform: translate(-50%, -100%) rotate(45deg);
+      }
+      100% {
+        transform: translate(-50%, -100%) rotate(405deg);
+      }
+    }
+
+    @keyframes minute-rotate {
+      0% {
+        transform: translate(-50%, -100%) rotate(90deg);
+      }
+      100% {
+        transform: translate(-50%, -100%) rotate(450deg);
+      }
+    }
+
+    @keyframes shackle-unlock {
+      0%, 70% {
+        transform: translateX(-50%) rotate(0deg);
+      }
+      85%, 100% {
+        transform: translateX(-50%) rotate(-20deg);
+      }
+    }
+
+    @keyframes security-pulse {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.5);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.2);
+      }
+    }
+
+    @keyframes screen-glow {
+      0%, 100% {
+        box-shadow: 0 0 10px rgba(96, 165, 250, 0.3);
+      }
+      50% {
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.6);
+      }
+    }
+
+    @keyframes app-blink {
+      0%, 100% {
+        opacity: 0.7;
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+
+    @keyframes notification-pulse {
+      0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.5;
+        transform: scale(1.3);
+      }
+    }
+
+    @keyframes button-press {
+      0%, 90% {
+        transform: translateX(-50%) scaleY(1);
+      }
+      95% {
+        transform: translateX(-50%) scaleY(0.7);
+      }
+      100% {
+        transform: translateX(-50%) scaleY(1);
+      }
+    }
+
+    @keyframes lightning-flash {
+      0%, 100% {
+        opacity: 0.8;
+        box-shadow: 0 0 10px var(--warning);
+      }
+      50% {
+        opacity: 1;
+        box-shadow: 0 0 25px var(--warning);
+        transform: scale(1.1);
+      }
+    }
+
+    @keyframes energy-pulse {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.3);
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1);
+      }
+    }
+
+    @keyframes robot-blink {
+      0%, 90% {
+        opacity: 1;
+        transform: scaleY(1);
+      }
+      95% {
+        opacity: 0.3;
+        transform: scaleY(0.1);
+      }
+      100% {
+        opacity: 1;
+        transform: scaleY(1);
+      }
+    }
+
+    @keyframes antenna-signal {
+      0%, 100% {
+        transform: translateX(-50%) scaleY(1);
+      }
+      50% {
+        transform: translateX(-50%) scaleY(1.3);
+      }
+    }
+
+    @keyframes signal-blink {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    @keyframes gear-rotate {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes document-float {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+
+    @keyframes arrow-grow {
+      0% {
+        width: 10px;
+        opacity: 0.7;
+      }
+      50% {
+        width: 20px;
+        opacity: 1;
+      }
+      100% {
+        width: 15px;
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes arrow-pulse {
+      0%, 100% {
+        opacity: 0.8;
+      }
+      50% {
+        opacity: 1;
+        transform: translateY(-50%) rotate(-30deg) scale(1.2);
+      }
+    }
+
+    @keyframes viz-draw {
+      0% {
+        width: 0;
+      }
+      100% {
+        width: 100%;
+      }
+    }
+
+    @keyframes viz-pulse {
+      0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.4);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- MORPHING PARTICLES -->
+  <div class="morph-particles" id="morphParticles"></div>
+
+  <!-- ANIMATED INTRO OVERLAY -->
+  <div class="intro-overlay" id="introOverlay">
+    <div class="intro-grid-glow"></div>
+    <div class="intro-content">
+      <div class="intro-logo-animated">
+        <div class="logo-ring ring-outer"></div>
+        <div class="logo-ring ring-middle"></div>
+        <div class="logo-ring ring-inner"></div>
+        <div class="logo-center">🎓</div>
+      </div>
+      <h1 class="intro-title">Welcome to the Future</h1>
+      <p class="intro-subtitle">Smart Attendance Tracking Powered by Innovation</p>
+      <div class="intro-progress-container">
+        <div class="intro-progress-bar">
+          <div class="intro-progress-fill"></div>
+        </div>
+        <div class="intro-status">Initializing system...</div>
+      </div>
+      <div class="intro-features">
+        <span class="intro-feature-tag">AI-Powered</span>
+        <span class="intro-feature-tag">Real-Time</span>
+        <span class="intro-feature-tag">Secure</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main-content" id="mainContent">
+    <!-- HEADER -->
+    <header class="header">
+      <div class="header-container">
+        <a href="#" class="logo">
+          <div class="logo-icon">🎓</div>
+          <span>Attendance System</span>
+        </a>
+        <nav>
+          <ul class="nav-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#about">About</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-container">
+      <!-- HERO SECTION -->
+      <div class="hero-content">
+        <div class="hero-badge">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+          Trusted by Educational Institutions
+        </div>
+        
+        <h1 class="hero-title">
+          Modern <span class="highlight">Attendance</span><br>
+          Management System
+        </h1>
+        
+        <p class="hero-description">
+          Streamline attendance tracking with our comprehensive digital solution. 
+          Built for students, faculty, and administrators.
+        </p>
+
+        <div class="features-grid">
+          <div class="feature-item">
+            <div class="feature-icon">📊</div>
+            <span class="feature-text">Real-time Analytics</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">??</div>
+            <span class="feature-text">Secure Access</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">📱</div>
+            <span class="feature-text">Mobile Friendly</span>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">⚡</div>
+            <span class="feature-text">Fast & Reliable</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- AUTH CARD -->
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-icon">🛡️</div>
+          <h2 class="auth-title">Get Started</h2>
+          <p class="auth-subtitle">Access your dashboard or create a new account</p>
+        </div>
+
+        <div class="auth-buttons">
+          <button class="btn btn-primary" onclick="goLogin()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+              <polyline points="10 17 15 12 10 7"/>
+              <line x1="15" y1="12" x2="3" y2="12"/>
+            </svg>
+            Sign In to Dashboard
+          </button>
+          
+          <div class="divider">
+            <span>or</span>
+          </div>
+          
+          <button class="btn btn-secondary" onclick="openModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="8.5" cy="7" r="4"/>
+              <line x1="20" y1="8" x2="20" y2="14"/>
+              <line x1="23" y1="11" x2="17" y2="11"/>
+            </svg>
+            Create New Account
+          </button>
+          
+          <div class="divider">
+            <span>Multi-College System</span>
+          </div>
+          
+          <button class="btn" onclick="window.location.href='college-management.html'" 
+                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 21h18"/>
+              <path d="M5 21V7l8-4v18"/>
+              <path d="M19 21V11l-6-4"/>
+            </svg>
+            College Management
+          </button>
+        </div>
+      </div>
+    </main>
+
+    <!-- FEATURES SECTION -->
+    <section id="features" class="features-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Powerful Features</h2>
+          <p class="section-subtitle">Everything you need for comprehensive attendance management</p>
+        </div>
+
+        <div class="features-detailed-grid">
+          <!-- Real-time Analytics -->
+          <div class="feature-card">
+            <div class="feature-card-icon analytics-3d-icon">
+              <div class="chart-container">
+                <div class="bar bar-1"></div>
+                <div class="bar bar-2"></div>
+                <div class="bar bar-3"></div>
+                <div class="bar bar-4"></div>
+                <div class="chart-line"></div>
+                <div class="data-points">
+                  <div class="point point-1"></div>
+                  <div class="point point-2"></div>
+                  <div class="point point-3"></div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Real-time Analytics</h3>
+            <p class="feature-card-description">
+              Get instant insights into attendance patterns, trends, and statistics with interactive dashboards and comprehensive reporting tools.
+            </p>
+            <ul class="feature-list">
+              <li>Live attendance tracking</li>
+              <li>Interactive charts and graphs</li>
+              <li>Attendance percentage calculations</li>
+              <li>Trend analysis and predictions</li>
+              <li>Custom date range reports</li>
+            </ul>
+          </div>
+
+          <!-- Facial Recognition -->
+          <div class="feature-card">
+            <div class="feature-card-icon facial-3d-icon">
+              <div class="face-scanner">
+                <div class="face-outline">
+                  <div class="scan-line"></div>
+                  <div class="scan-dots">
+                    <div class="dot dot-1"></div>
+                    <div class="dot dot-2"></div>
+                    <div class="dot dot-3"></div>
+                    <div class="dot dot-4"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Facial Recognition</h3>
+            <p class="feature-card-description">
+              Advanced AI-powered facial recognition technology for accurate and contactless attendance marking with anti-spoofing protection.
+            </p>
+            <ul class="feature-list">
+              <li>AI-powered face detection</li>
+              <li>Contactless attendance marking</li>
+              <li>Anti-spoofing technology</li>
+              <li>Multiple face enrollment</li>
+              <li>Real-time face matching</li>
+              <li>Privacy-compliant processing</li>
+            </ul>
+          </div>
+
+          <!-- GPS Location Tracking -->
+          <div class="feature-card">
+            <div class="feature-card-icon gps-3d-icon">
+              <div class="globe-container">
+                <div class="globe">
+                  <div class="globe-surface"></div>
+                  <div class="meridian-lines">
+                    <div class="meridian vertical-1"></div>
+                    <div class="meridian vertical-2"></div>
+                    <div class="meridian horizontal-1"></div>
+                    <div class="meridian horizontal-2"></div>
+                  </div>
+                  <div class="location-pin"></div>
+                  <div class="signal-waves">
+                    <div class="wave wave-1"></div>
+                    <div class="wave wave-2"></div>
+                    <div class="wave wave-3"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">GPS Location Tracking</h3>
+            <p class="feature-card-description">
+              Precise location-based attendance with geofencing capabilities to ensure students are physically present at the designated location.
+            </p>
+            <ul class="feature-list">
+              <li>Geofencing technology</li>
+              <li>Location-based verification</li>
+              <li>Campus boundary detection</li>
+              <li>Real-time location tracking</li>
+              <li>Distance-based attendance</li>
+              <li>Location history logs</li>
+            </ul>
+          </div>
+
+          <!-- Smart Timing System -->
+          <div class="feature-card">
+            <div class="feature-card-icon timing-3d-icon">
+              <div class="clock-container">
+                <div class="clock-face">
+                  <div class="hour-hand"></div>
+                  <div class="minute-hand"></div>
+                  <div class="center-dot"></div>
+                  <div class="time-markers">
+                    <div class="marker marker-12"></div>
+                    <div class="marker marker-3"></div>
+                    <div class="marker marker-6"></div>
+                    <div class="marker marker-9"></div>
+                  </div>
+                  <div class="digital-display">
+                    <div class="digit-segment"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Smart Timing System</h3>
+            <p class="feature-card-description">
+              Intelligent time management with automated scheduling, late arrival detection, and flexible timing configurations for different classes.
+            </p>
+            <ul class="feature-list">
+              <li>Automated time tracking</li>
+              <li>Late arrival notifications</li>
+              <li>Flexible class schedules</li>
+              <li>Break time management</li>
+              <li>Overtime calculations</li>
+              <li>Time-based reporting</li>
+            </ul>
+          </div>
+
+          <!-- Secure Access -->
+          <div class="feature-card">
+            <div class="feature-card-icon security-3d-icon">
+              <div class="lock-container">
+                <div class="lock-body">
+                  <div class="lock-shackle"></div>
+                  <div class="keyhole"></div>
+                  <div class="security-rings">
+                    <div class="ring ring-1"></div>
+                    <div class="ring ring-2"></div>
+                    <div class="ring ring-3"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Secure Access Control</h3>
+            <p class="feature-card-description">
+              Multi-layered security with role-based access control, ensuring data privacy and system integrity for all users.
+            </p>
+            <ul class="feature-list">
+              <li>Role-based permissions</li>
+              <li>Encrypted data transmission</li>
+              <li>Secure authentication</li>
+              <li>Activity logging and monitoring</li>
+              <li>Data backup and recovery</li>
+            </ul>
+          </div>
+
+          <!-- Mobile Friendly -->
+          <div class="feature-card">
+            <div class="feature-card-icon mobile-3d-icon">
+              <div class="phone-container">
+                <div class="phone-body">
+                  <div class="phone-screen">
+                    <div class="screen-content">
+                      <div class="app-icon app-1"></div>
+                      <div class="app-icon app-2"></div>
+                      <div class="app-icon app-3"></div>
+                      <div class="notification-dot"></div>
+                    </div>
+                  </div>
+                  <div class="phone-button"></div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Mobile Responsive</h3>
+            <p class="feature-card-description">
+              Fully optimized for all devices with native mobile experience, allowing attendance management anywhere, anytime.
+            </p>
+            <ul class="feature-list">
+              <li>Responsive design for all screens</li>
+              <li>Touch-friendly interface</li>
+              <li>Offline capability</li>
+              <li>Mobile notifications</li>
+              <li>Cross-platform compatibility</li>
+            </ul>
+          </div>
+
+          <!-- Fast & Reliable -->
+          <div class="feature-card">
+            <div class="feature-card-icon speed-3d-icon">
+              <div class="lightning-container">
+                <div class="lightning-bolt">
+                  <div class="bolt-segment segment-1"></div>
+                  <div class="bolt-segment segment-2"></div>
+                  <div class="bolt-segment segment-3"></div>
+                </div>
+                <div class="energy-field">
+                  <div class="energy-ring ring-1"></div>
+                  <div class="energy-ring ring-2"></div>
+                  <div class="energy-ring ring-3"></div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Fast & Reliable</h3>
+            <p class="feature-card-description">
+              Lightning-fast performance with 99.9% uptime guarantee, ensuring your attendance system is always available when needed.
+            </p>
+            <ul class="feature-list">
+              <li>Sub-second response times</li>
+              <li>Cloud-based infrastructure</li>
+              <li>Automatic scaling</li>
+              <li>24/7 system monitoring</li>
+              <li>99.9% uptime guarantee</li>
+            </ul>
+          </div>
+
+          <!-- Smart Automation -->
+          <div class="feature-card">
+            <div class="feature-card-icon automation-3d-icon">
+              <div class="robot-container">
+                <div class="robot-head">
+                  <div class="robot-eye eye-left"></div>
+                  <div class="robot-eye eye-right"></div>
+                  <div class="robot-antenna"></div>
+                </div>
+                <div class="gear-system">
+                  <div class="gear gear-1"></div>
+                  <div class="gear gear-2"></div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Smart Automation</h3>
+            <p class="feature-card-description">
+              Automated attendance marking, notifications, and report generation to reduce manual work and increase efficiency.
+            </p>
+            <ul class="feature-list">
+              <li>Automated attendance alerts</li>
+              <li>Smart notification system</li>
+              <li>Scheduled report generation</li>
+              <li>Bulk operations support</li>
+              <li>Integration with existing systems</li>
+            </ul>
+          </div>
+
+          <!-- Advanced Reporting -->
+          <div class="feature-card">
+            <div class="feature-card-icon reporting-3d-icon">
+              <div class="report-container">
+                <div class="document-stack">
+                  <div class="document doc-1"></div>
+                  <div class="document doc-2"></div>
+                  <div class="document doc-3"></div>
+                </div>
+                <div class="trend-arrow">
+                  <div class="arrow-body"></div>
+                  <div class="arrow-head"></div>
+                </div>
+                <div class="data-visualization">
+                  <div class="viz-line"></div>
+                  <div class="viz-dots">
+                    <div class="viz-dot dot-1"></div>
+                    <div class="viz-dot dot-2"></div>
+                    <div class="viz-dot dot-3"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <h3 class="feature-card-title">Advanced Reporting</h3>
+            <p class="feature-card-description">
+              Comprehensive reporting tools with customizable templates, export options, and detailed analytics for informed decision-making.
+            </p>
+            <ul class="feature-list">
+              <li>Customizable report templates</li>
+              <li>Multiple export formats (PDF, Excel, CSV)</li>
+              <li>Automated report scheduling</li>
+              <li>Visual data representation</li>
+              <li>Comparative analysis tools</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT SECTION -->
+    <section id="about" class="about-section">
+      <div class="section-container">
+        <div class="about-content">
+          <div class="about-text">
+            <h2 class="section-title">About Attendance System</h2>
+            <p class="about-description">
+              Attendance  System is a comprehensive digital solution designed specifically for educational institutions to streamline attendance management processes. Built with modern technology and user-centric design, our platform serves students, faculty, and administrators with powerful tools for tracking, analyzing, and managing attendance data.
+            </p>
+            
+            <div class="about-stats">
+              <div class="stat-item">
+                <div class="stat-number">1000+</div>
+                <div class="stat-label">Active Users</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Institutions</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">99.9%</div>
+                <div class="stat-label">Uptime</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-number">24/7</div>
+                <div class="stat-label">Support</div>
+              </div>
+            </div>
+
+            <div class="about-features">
+              <h3>Why Choose Attendance  System?</h3>
+              <div class="about-feature-list">
+                <div class="about-feature">
+                  <span class="about-feature-icon">✅</span>
+                  <span>Easy to use interface for all user types</span>
+                </div>
+                <div class="about-feature">
+                  <span class="about-feature-icon">✅</span>
+                  <span>Scalable solution for institutions of any size</span>
+                </div>
+                <div class="about-feature">
+                  <span class="about-feature-icon">✅</span>
+                  <span>Comprehensive data security and privacy</span>
+                </div>
+                <div class="about-feature">
+                  <span class="about-feature-icon">✅</span>
+                  <span>Regular updates and feature enhancements</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="about-visual">
+            <div class="about-card">
+              <div class="about-card-header">
+                <div class="about-card-icon">🎓</div>
+                <h4>Our Mission</h4>
+              </div>
+              <p>To revolutionize attendance management in educational institutions through innovative technology and user-friendly design.</p>
+            </div>
+            
+            <div class="about-card">
+              <div class="about-card-header">
+                <div class="about-card-icon">🚀</div>
+                <h4>Our Vision</h4>
+              </div>
+              <p>To become the leading platform for educational data management, empowering institutions worldwide with smart solutions.</p>
+            </div>
+            
+            <div class="about-card">
+              <div class="about-card-header">
+                <div class="about-card-icon">💡</div>
+                <h4>Our Values</h4>
+              </div>
+              <p>Innovation, reliability, security, and user satisfaction are at the core of everything we do.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT SECTION -->
+    <section id="contact" class="contact-section">
+      <div class="section-container">
+        <div class="section-header">
+          <h2 class="section-title">Get in Touch</h2>
+          <p class="section-subtitle">Have questions? We're here to help you get started</p>
+        </div>
+
+        <div class="contact-content">
+          <div class="contact-info">
+            <div class="contact-card">
+              <div class="contact-icon">📧</div>
+              <h4>Email Support</h4>
+              <p>ganeshkodigudla047@gmail.com</p>
+              <span class="contact-note">Response within 24 hours</span>
+            </div>
+            
+            <div class="contact-card">
+              <div class="contact-icon">📞</div>
+              <h4>Phone Support</h4>
+              <p>+91 9849817764</p>
+              <span class="contact-note">Mon-Fri, 9AM-6PM EST</span>
+            </div>
+            
+            <div class="contact-card">
+              <div class="contact-icon">💬</div>
+              <h4>Live Chat</h4>
+              <p>Available 24/7</p>
+              <span class="contact-note">Instant support</span>
+            </div>
+            
+            <div class="contact-card">
+              <div class="contact-icon">📍</div>
+              <h4>Office Address</h4>
+              <p>avanthi institute of engineering and technology</p>
+              <span class="contact-note">Visit us anytime</span>
+            </div>
+          </div>
+
+          <div class="contact-form">
+            <h3>Send us a Message</h3>
+            <form class="form">
+              <div class="form-group">
+                <label for="name">Full Name</label>
+                <input type="text" id="name" name="name" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" required>
+              </div>
+              
+              <div class="form-group">
+                <label for="institution">Institution Name</label>
+                <input type="text" id="institution" name="institution">
+              </div>
+              
+              <div class="form-group">
+                <label for="subject">Subject</label>
+                <select id="subject" name="subject" required>
+                  <option value="">Select a topic</option>
+                  <option value="demo">Request Demo</option>
+                  <option value="pricing">Pricing Information</option>
+                  <option value="support">Technical Support</option>
+                  <option value="partnership">Partnership Inquiry</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              
+              <div class="form-group">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" rows="5" required></textarea>
+              </div>
+              
+              <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="section-container">
+        <div class="footer-content">
+          <div class="footer-brand">
+            <div class="logo">
+              <div class="logo-icon">🎓</div>
+              <span>Attendance System</span>
+            </div>
+            <p>Professional attendance management for educational institutions worldwide.</p>
+          </div>
+          
+          <div class="footer-links">
+            <div class="footer-column">
+              <h4>Product</h4>
+              <ul>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#demo">Demo</a></li>
+                <li><a href="#integrations">Integrations</a></li>
+              </ul>
+            </div>
+            
+            <div class="footer-column">
+              <h4>Support</h4>
+              <ul>
+                <li><a href="#help">Help Center</a></li>
+                <li><a href="#documentation">Documentation</a></li>
+                <li><a href="#contact">Contact Us</a></li>
+                <li><a href="#status">System Status</a></li>
+              </ul>
+            </div>
+            
+            <div class="footer-column">
+              <h4>Company</h4>
+              <ul>
+                <li><a href="#about">About Us</a></li>
+                <li><a href="#careers">Careers</a></li>
+                <li><a href="#blog">Blog</a></li>
+                <li><a href="#press">Press</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="footer-bottom">
+          <p>&copy; 2026 Attendance System. All rights reserved.</p>
+          <div class="footer-legal">
+            <a href="#privacy">Privacy Policy</a>
+            <a href="#terms">Terms of Service</a>
+            <a href="#cookies">Cookie Policy</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ROLE SELECTION MODAL -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Choose Your Role</h3>
+        <button class="close-btn" onclick="document.getElementById('modalOverlay').classList.remove('active')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="modal-description">
+        Select your role to begin the registration process with the appropriate permissions and features.
+      </p>
+
+      <div id="roleSelection" class="role-grid">
+        <div class="role-option" onclick="registerAs('student')">
+          <div class="role-icon">👨‍🎓</div>
+          <div class="role-info">
+            <div class="role-name">Student</div>
+            <div class="role-desc">Track and view your attendance records</div>
+          </div>
+        </div>
+        <div class="role-option" onclick="registerAs('incharge')">
+          <div class="role-icon">👨‍🏫</div>
+          <div class="role-info">
+            <div class="role-name">Faculty/Incharge</div>
+            <div class="role-desc">Manage class attendance and student records</div>
+          </div>
+        </div>
+        <div class="role-option" onclick="registerAs('hod')">
+          <div class="role-icon">🏛️</div>
+          <div class="role-info">
+            <div class="role-name">Head of Department</div>
+            <div class="role-desc">Department-wide administration and oversight</div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Professional morphing transition
+    window.addEventListener('DOMContentLoaded', () => {
+      const introOverlay = document.getElementById('introOverlay');
+      const mainContent = document.getElementById('mainContent');
+      const morphParticles = document.getElementById('morphParticles');
+      const introStatus = document.querySelector('.intro-status');
+      const urlParams = new URLSearchParams(window.location.search);
+      const openRegistration = urlParams.get('register') === '1';
+      const skipIntro = urlParams.get('skipIntro') === '1';
+      const registrationPromptMessage = sessionStorage.getItem('registrationPromptMessage');
+
+      // Create morphing particles
+      function createMorphParticles() {
+        const particleCount = 50;
+        morphParticles.innerHTML = '';
+        
+        for (let i = 0; i < particleCount; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = Math.random() * 100 + '%';
+          particle.style.top = Math.random() * 100 + '%';
+          particle.style.animationDelay = Math.random() * 0.5 + 's';
+          morphParticles.appendChild(particle);
+        }
+      }
+
+      function runIntroStatusSequence() {
+        if (!introStatus) return;
+        const steps = [
+          { text: 'Initializing smart modules...', delay: 350 },
+          { text: 'Verifying secure college access...', delay: 1150 },
+          { text: 'Preparing live attendance workspace...', delay: 1950 }
+        ];
+
+        steps.forEach(step => {
+          setTimeout(() => {
+            introStatus.style.opacity = '0';
+            setTimeout(() => {
+              introStatus.textContent = step.text;
+              introStatus.style.opacity = '0.85';
+            }, 120);
+          }, step.delay);
+        });
+      }
+
+      if (skipIntro) {
+        mainContent.classList.add('visible');
+        introOverlay.style.display = 'none';
+        morphParticles.classList.remove('active');
+      } else {
+        runIntroStatusSequence();
+        // Start morphing transition after 3 seconds
+        setTimeout(() => {
+          // Create and show particles
+          createMorphParticles();
+          morphParticles.classList.add('active');
+          
+          // Start morphing the intro elements
+          setTimeout(() => {
+            introOverlay.classList.add('morph-exit');
+          }, 200);
+          
+          // Show main content with smooth fade
+          setTimeout(() => {
+            mainContent.classList.add('visible');
+          }, 500);
+          
+          // Hide particles and intro overlay
+          setTimeout(() => {
+            morphParticles.classList.remove('active');
+            introOverlay.style.display = 'none';
+          }, 2500);
+          
+        }, 3000);
+      }
+
+      // Section animations on scroll
+      const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      }, observerOptions);
+
+      // Observe sections for animation
+      const sections = document.querySelectorAll('.features-section, .about-section, .contact-section');
+      sections.forEach(section => {
+        observer.observe(section);
+      });
+
+      // Smooth scrolling for navigation links
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        });
+      });
+
+      if (openRegistration) {
+        setTimeout(() => {
+          const modalOverlay = document.getElementById('modalOverlay');
+          if (modalOverlay) {
+            modalOverlay.classList.add('active');
+          }
+          if (registrationPromptMessage) {
+            alert(registrationPromptMessage);
+            sessionStorage.removeItem('registrationPromptMessage');
+          }
+        }, 900);
+      }
+    });
+
+    // Contact form submission
+    document.addEventListener('DOMContentLoaded', () => {
+      const contactForm = document.querySelector('.form');
+      if (contactForm) {
+        contactForm.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          // Get form data
+          const formData = new FormData(this);
+          const data = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            institution: formData.get('institution') || 'Not specified',
+            subject: formData.get('subject'),
+            message: formData.get('message'),
+            timestamp: new Date().toISOString(), // Use ISO string for better compatibility
+            read: false,
+            id: Date.now().toString() // Simple ID generation
+          };
+          
+          console.log('Saving message:', data); // Debug log
+          
+          try {
+            // Save to localStorage
+            const existingMessages = JSON.parse(localStorage.getItem('contactMessages') || '[]');
+            existingMessages.unshift(data);
+            localStorage.setItem('contactMessages', JSON.stringify(existingMessages));
+            
+            console.log('Messages in localStorage:', existingMessages); // Debug log
+            
+            // Show success message
+            alert('Thank you for your message! We\'ll get back to you within 24 hours.');
+            
+            // Reset form
+            this.reset();
+          } catch (error) {
+            console.error('Error saving message:', error);
+            alert('Sorry, there was an error sending your message. Please try again.');
+          }
+        });
+      }
+    });
+
+    function goLogin() {
+      localStorage.removeItem("userRole");
+      window.location.href = "login.html";
+    }
+
+    function openModal() {
+      document.getElementById('modalOverlay').classList.add('active');
+    }
+
+    function closeModal(e) {
+      if (e.target.id === 'modalOverlay') {
+        e.target.classList.remove('active');
+      }
+    }
+
+    function registerAs(role) {
+      localStorage.setItem("userRole", role);
+      window.location.href = "register.html";
+    }
+  </script>
+
+</body>
+
+</html>
