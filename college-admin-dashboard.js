@@ -234,6 +234,7 @@ let pendingApprovals = [];
 let pendingPerms = [];
 let pendingProfileRequests = [];
 let pendingManualRequests = [];
+const _dismissedNotifyIds = new Set(); // tracks bell-dismissed items (session only)
 let notifyUsersUnsub = null;
 let notifyPermsUnsub = null;
 let notifyProfileUnsub = null;
@@ -246,15 +247,21 @@ function renderNotifyList() {
 	if (!notifyList) return;
 	const rows = [];
 
+	// Filter out dismissed items
+	const visibleApprovals = pendingApprovals.filter(u => !_dismissedNotifyIds.has('approval_' + u.id));
+	const visiblePerms = pendingPerms.filter(p => !_dismissedNotifyIds.has('perm_' + p.id));
+	const visibleProfile = pendingProfileRequests.filter(r => !_dismissedNotifyIds.has('profile_' + r.id));
+	const visibleManual = pendingManualRequests.filter(m => !_dismissedNotifyIds.has('manual_' + m.id));
+
 	// Add Clear All button at the top
-	if (pendingApprovals.length > 0 || pendingPerms.length > 0) {
+	if (visibleApprovals.length > 0 || visiblePerms.length > 0 || visibleProfile.length > 0 || visibleManual.length > 0) {
 		rows.push(`<button id="clearAllInList" class="notify-clear-btn" type="button">Clear All</button>`);
 	}
 
-	pendingApprovals.forEach(u => rows.push(`<div class="notify-item" data-type="approval" data-id="${u.id}">Approval: ${escapeHtml(u.name)}</div>`));
-	pendingPerms.forEach(p => rows.push(`<div class="notify-item" data-type="permission" data-id="${p.id}">Permission: ${escapeHtml(p.label)}</div>`));
-	pendingProfileRequests.forEach(r => rows.push(`<div class="notify-item" data-type="profileUpdate" data-id="${r.id}">Profile Update: ${escapeHtml(r.name)}</div>`));
-	pendingManualRequests.forEach(m => rows.push(`<div class="notify-item" data-type="manualAttendance" data-id="${m.id}">Manual Attendance: ${escapeHtml(m.name)}</div>`));
+	visibleApprovals.forEach(u => rows.push(`<div class="notify-item" data-type="approval" data-id="${u.id}">Approval: ${escapeHtml(u.name)}</div>`));
+	visiblePerms.forEach(p => rows.push(`<div class="notify-item" data-type="permission" data-id="${p.id}">Permission: ${escapeHtml(p.label)}</div>`));
+	visibleProfile.forEach(r => rows.push(`<div class="notify-item" data-type="profileUpdate" data-id="${r.id}">Profile Update: ${escapeHtml(r.name)}</div>`));
+	visibleManual.forEach(m => rows.push(`<div class="notify-item" data-type="manualAttendance" data-id="${m.id}">Manual Attendance: ${escapeHtml(m.name)}</div>`));
 
 	if (rows.length === 0) notifyList.innerHTML = '<div class="notify-item">No notifications</div>';
 	else notifyList.innerHTML = rows.join('');
@@ -296,8 +303,11 @@ function renderNotifyList() {
 		};
 	});
 
-	// update bell count
-	const total = pendingApprovals.length + pendingPerms.length + pendingProfileRequests.length + pendingManualRequests.length;
+	// update bell count — exclude dismissed items
+	const total = (pendingApprovals.filter(u => !_dismissedNotifyIds.has('approval_' + u.id)).length)
+		+ (pendingPerms.filter(p => !_dismissedNotifyIds.has('perm_' + p.id)).length)
+		+ (pendingProfileRequests.filter(r => !_dismissedNotifyIds.has('profile_' + r.id)).length)
+		+ (pendingManualRequests.filter(m => !_dismissedNotifyIds.has('manual_' + m.id)).length);
 	if (notifyCount) {
 		safeSet(notifyCount, total);
 		if (total === 0) notifyCount.classList.add('hidden'); else notifyCount.classList.remove('hidden');
@@ -768,24 +778,13 @@ if (sidebarLogoutBtn) sidebarLogoutBtn.onclick = handleLogout;
 /* ================= CLEAR ALL NOTIFICATIONS ================= */
 
 async function clearAllNotifications() {
-	try {
-		// Approve all pending users
-		const allApprovals = [...pendingApprovals];
-		const ops = allApprovals.map(u => updateDoc(doc(db, "users", u.id), { approved: true }));
-		await Promise.all(ops);
+	// Just dismiss from the bell — do NOT approve users or delete requests
+	pendingApprovals.forEach(u => _dismissedNotifyIds.add('approval_' + u.id));
+	pendingPerms.forEach(p => _dismissedNotifyIds.add('perm_' + p.id));
+	pendingProfileRequests.forEach(r => _dismissedNotifyIds.add('profile_' + r.id));
+	pendingManualRequests.forEach(m => _dismissedNotifyIds.add('manual_' + m.id));
 
-		// Mark all pending permissions as read (delete them or mark as handled)
-		const allPerms = [...pendingPerms];
-		const permOps = allPerms.map(p => deleteDoc(doc(db, "permissionRequests", p.id)));
-		await Promise.all(permOps);
-
-		await loadApprovals();
-		await loadStats();
-		renderNotifyList();
-	} catch (err) {
-		console.error('clearAll error', err);
-		alert('Failed to clear notifications');
-	}
+	renderNotifyList();
 }
 
 
