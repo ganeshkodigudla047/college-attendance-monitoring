@@ -85,23 +85,47 @@ async function validateToken() {
     validatedToken = token;
     validatedEmail = invite.email;
     validatedRole = invite.role;
-    validatedCollegeId = invite.collegeId; // NEW: College context
-    validatedCollegeName = invite.collegeName;
+    validatedCollegeId = invite.collegeId || null;
+    validatedCollegeName = invite.collegeName || null;
 
-    tokenStatus.innerText = `✓ Valid invitation for ${invite.role.toUpperCase()} at ${invite.collegeName || 'College'}`;
-    tokenStatus.style.color = "#059669";
-
-    // Pre-fill email and set role
+    // Pre-fill email and lock it
     email.value = validatedEmail;
     email.disabled = true;
 
-    // Override role from localStorage with token role
+    // Override role
     localStorage.setItem("userRole", validatedRole);
-    localStorage.setItem("collegeId", validatedCollegeId); // Store college context
-
-    // Update the global role variable and UI
     role = validatedRole;
     document.getElementById("roleBadge").innerText = validatedRole.toUpperCase() + " REGISTRATION";
+
+    // Load all colleges then pre-select and lock to the invite's college
+    await loadColleges();
+
+    if (validatedCollegeId && collegeSelect) {
+      collegeSelect.value = validatedCollegeId;
+      if (!collegeSelect.value) {
+        const opt = document.createElement("option");
+        opt.value = validatedCollegeId;
+        opt.textContent = validatedCollegeName || validatedCollegeId;
+        collegeSelect.appendChild(opt);
+        collegeSelect.value = validatedCollegeId;
+      }
+      const matched = collegesCache.find(c => c.id === validatedCollegeId);
+      if (matched) validatedCollegeName = matched.name;
+
+      // Show the dropdown so user can see which college, but locked
+      if (collegeSelection) collegeSelection.classList.remove("hidden");
+      collegeSelect.disabled = true;
+      collegeSelect.style.opacity = "0.7";
+      collegeSelect.style.cursor = "not-allowed";
+      collegeSelect.title = "College assigned by your invitation";
+    } else {
+      // No college in invite — hide dropdown (superadmin or role-only invite)
+      if (collegeSelection) collegeSelection.classList.add("hidden");
+    }
+
+    tokenStatus.innerText = `✓ Valid invitation for ${validatedRole.toUpperCase()}${validatedCollegeName ? ' at ' + validatedCollegeName : ''}`;
+    tokenStatus.style.color = "#059669";
+    updateAdminCollegeField();
 
   } catch (error) {
     console.error("Token validation error:", error);
@@ -255,14 +279,14 @@ function setupRoleBasedFields() {
 
   // Load colleges and show selection if no token
   // Super Admin doesn't need college selection
-  if (!validatedToken && role !== "superadmin") {
+  if (role === "superadmin") {
+    collegeSelection.classList.add("hidden");
+  } else if (!validatedToken) {
+    // No token — let user pick freely
     loadColleges();
     collegeSelection.classList.remove("hidden");
-  } else if (role === "superadmin") {
-    // Hide college selection for super admin
-    collegeSelection.classList.add("hidden");
   }
-  updateAdminCollegeField();
+  // If validatedToken exists, validateToken() already handled loading + locking the dropdown  updateAdminCollegeField();
 }
 
 // Setup fields immediately if we have a role, or wait for token validation
@@ -898,9 +922,14 @@ submitBtn.onclick = async () => {
 
     phone: phone.value,
 
-    // College information (super admin doesn't belong to any college)
+    // College information
+    // If invite had a specific college, use that. Otherwise use what the user selected.
     collegeId: role === "superadmin" ? null : (validatedCollegeId || collegeSelect.value),
-    collegeName: role === "superadmin" ? "System Admin" : (validatedCollegeName || (collegeSelect.selectedIndex >= 0 ? collegeSelect.options[collegeSelect.selectedIndex].text.split(' (')[0] : "Unknown College")),
+    collegeName: role === "superadmin" ? "System Admin" : (() => {
+      const cid = validatedCollegeId || collegeSelect.value;
+      const matched = collegesCache.find(c => c.id === cid);
+      return matched ? matched.name : (collegeSelect.selectedIndex >= 0 ? collegeSelect.options[collegeSelect.selectedIndex].text.split(' (')[0] : "Unknown College");
+    })(),
     collegeCode: role === "superadmin" ? null : (collegesCache.find(c => c.id === (validatedCollegeId || collegeSelect.value))?.code || null),
 
     // ADMIN AUTO APPROVED
