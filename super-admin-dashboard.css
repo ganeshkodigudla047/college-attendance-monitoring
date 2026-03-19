@@ -477,6 +477,8 @@ body {
     box-shadow: none !important;
 }
 
+/* Card hover rules moved to end of file */
+
 .header, .sidebar, .sidebar-footer {
 	background: transparent !important;
 	backdrop-filter: none !important;
@@ -702,6 +704,8 @@ body.has-bg .controls-bar select {
     color: #fff !important;
     border-color: rgba(255,255,255,0.25) !important;
 }
+
+/* has-bg card hover rules moved to end of file */
 
 /* ===== SECTION HEADER ===== */
 .section-header {
@@ -987,4 +991,36 @@ body.has-bg .attendance-fixed-table tbody tr:hover {
 body.has-bg #adSlot {
     box-shadow: 0 4px 24px rgba(0,0,0,0.4);
     border: 1px solid rgba(255,255,255,0.1);
+}
+
+/* ===== CARD HOVER — absolute last so nothing overrides ===== */
+.card, .stat-card, .session-card,
+.status-box, .admin-settings-box,
+.admin-setting-item, .profile-info-item-v2 {
+    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
+}
+.card:hover, .stat-card:hover, .session-card:hover,
+.status-box:hover, .admin-settings-box:hover,
+.admin-setting-item:hover, .profile-info-item-v2:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.15) !important;
+}
+/* With background image */
+body.has-bg .sa-stat-card, body.has-bg .sa-card,
+body.has-bg .sa-activity-card, body.has-bg .sa-attention,
+body.has-bg .card, body.has-bg .stat-card,
+body.has-bg .session-card, body.has-bg .status-box,
+body.has-bg .admin-settings-box, body.has-bg .admin-setting-item,
+body.has-bg .profile-info-item-v2 {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+}
+body.has-bg .sa-stat-card:hover, body.has-bg .sa-card:hover,
+body.has-bg .sa-activity-card:hover, body.has-bg .sa-attention:hover,
+body.has-bg .card:hover, body.has-bg .stat-card:hover,
+body.has-bg .session-card:hover, body.has-bg .status-box:hover,
+body.has-bg .admin-settings-box:hover, body.has-bg .admin-setting-item:hover,
+body.has-bg .profile-info-item-v2:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.18) !important;
+    background: rgba(255,255,255,0.13) !important;
 }
