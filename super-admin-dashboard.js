@@ -283,10 +283,22 @@ const hodProfileApprovalToggle = document.getElementById("hodProfileApprovalTogg
 const saveSecuritySettings = document.getElementById("saveSecuritySettings");
 const profileUpdateSearch = document.getElementById("profileUpdateSearch");
 
+// Invite Elements
+const inviteEmail = document.getElementById("inviteEmail");
+const inviteRole = document.getElementById("inviteRole");
+const inviteCollege = document.getElementById("inviteCollege");
+const inviteCollegeField = document.getElementById("inviteCollegeField");
+const sendInviteBtn = document.getElementById("sendInviteBtn");
+const inviteStatusMessage = document.getElementById("inviteMessage");
+const invitesTableBody = document.getElementById("invitesTableBody");
+const refreshInvitesBtn = document.getElementById("refreshInvitesBtn");
+const clearAllInvitesBtn = document.getElementById("clearAllInvitesBtn");
+
 let pendingApprovals = [];
 let pendingPerms = [];
 let pendingProfileRequests = [];
 let pendingManualRequests = [];
+const _dismissedNotifyIds = new Set(); // tracks bell-dismissed items (session only)
 let notifyUsersUnsub = null;
 let notifyPermsUnsub = null;
 let notifyProfileUnsub = null;
@@ -299,15 +311,21 @@ function renderNotifyList() {
 	if (!notifyList) return;
 	const rows = [];
 
+	// Filter out dismissed items
+	const visibleApprovals = pendingApprovals.filter(u => !_dismissedNotifyIds.has('approval_' + u.id));
+	const visiblePerms = pendingPerms.filter(p => !_dismissedNotifyIds.has('perm_' + p.id));
+	const visibleProfile = pendingProfileRequests.filter(r => !_dismissedNotifyIds.has('profile_' + r.id));
+	const visibleManual = pendingManualRequests.filter(m => !_dismissedNotifyIds.has('manual_' + m.id));
+
 	// Add Clear All button at the top
-	if (pendingApprovals.length > 0 || pendingPerms.length > 0) {
+	if (visibleApprovals.length > 0 || visiblePerms.length > 0 || visibleProfile.length > 0 || visibleManual.length > 0) {
 		rows.push(`<button id="clearAllInList" class="notify-clear-btn" type="button">Clear All</button>`);
 	}
 
-	pendingApprovals.forEach(u => rows.push(`<div class="notify-item" data-type="approval" data-id="${u.id}">Approval: ${escapeHtml(u.name)}</div>`));
-	pendingPerms.forEach(p => rows.push(`<div class="notify-item" data-type="permission" data-id="${p.id}">Permission: ${escapeHtml(p.label)}</div>`));
-	pendingProfileRequests.forEach(r => rows.push(`<div class="notify-item" data-type="profileUpdate" data-id="${r.id}">Profile Update: ${escapeHtml(r.name)}</div>`));
-	pendingManualRequests.forEach(m => rows.push(`<div class="notify-item" data-type="manualAttendance" data-id="${m.id}">Manual Attendance: ${escapeHtml(m.name)}</div>`));
+	visibleApprovals.forEach(u => rows.push(`<div class="notify-item" data-type="approval" data-id="${u.id}">Approval: ${escapeHtml(u.name)}</div>`));
+	visiblePerms.forEach(p => rows.push(`<div class="notify-item" data-type="permission" data-id="${p.id}">Permission: ${escapeHtml(p.label)}</div>`));
+	visibleProfile.forEach(r => rows.push(`<div class="notify-item" data-type="profileUpdate" data-id="${r.id}">Profile Update: ${escapeHtml(r.name)}</div>`));
+	visibleManual.forEach(m => rows.push(`<div class="notify-item" data-type="manualAttendance" data-id="${m.id}">Manual Attendance: ${escapeHtml(m.name)}</div>`));
 
 	if (rows.length === 0) notifyList.innerHTML = '<div class="notify-item">No notifications</div>';
 	else notifyList.innerHTML = rows.join('');
@@ -349,8 +367,11 @@ function renderNotifyList() {
 		};
 	});
 
-	// update bell count
-	const total = pendingApprovals.length + pendingPerms.length + pendingProfileRequests.length + pendingManualRequests.length;
+	// update bell count — exclude dismissed items
+	const total = (pendingApprovals.filter(u => !_dismissedNotifyIds.has('approval_' + u.id)).length)
+		+ (pendingPerms.filter(p => !_dismissedNotifyIds.has('perm_' + p.id)).length)
+		+ (pendingProfileRequests.filter(r => !_dismissedNotifyIds.has('profile_' + r.id)).length)
+		+ (pendingManualRequests.filter(m => !_dismissedNotifyIds.has('manual_' + m.id)).length);
 	if (notifyCount) {
 		safeSet(notifyCount, total);
 		if (total === 0) notifyCount.classList.add('hidden'); else notifyCount.classList.remove('hidden');
@@ -762,6 +783,7 @@ function showSection(id, isBack = false) {
 			break;
 		case 'invite':
 			if (typeof loadPendingInvites === 'function') loadPendingInvites();
+			if (typeof loadInviteColleges === 'function') loadInviteColleges();
 			break;
 		case 'profile':
 			if (typeof loadAdminProfile === 'function') loadAdminProfile();
@@ -894,24 +916,13 @@ if (sidebarLogoutBtn) sidebarLogoutBtn.onclick = handleLogout;
 /* ================= CLEAR ALL NOTIFICATIONS ================= */
 
 async function clearAllNotifications() {
-	try {
-		// Approve all pending users
-		const allApprovals = [...pendingApprovals];
-		const ops = allApprovals.map(u => updateDoc(doc(db, "users", u.id), { approved: true }));
-		await Promise.all(ops);
+	// Just dismiss from the bell — do NOT approve users or delete requests
+	pendingApprovals.forEach(u => _dismissedNotifyIds.add('approval_' + u.id));
+	pendingPerms.forEach(p => _dismissedNotifyIds.add('perm_' + p.id));
+	pendingProfileRequests.forEach(r => _dismissedNotifyIds.add('profile_' + r.id));
+	pendingManualRequests.forEach(m => _dismissedNotifyIds.add('manual_' + m.id));
 
-		// Mark all pending permissions as read (delete them or mark as handled)
-		const allPerms = [...pendingPerms];
-		const permOps = allPerms.map(p => deleteDoc(doc(db, "permissionRequests", p.id)));
-		await Promise.all(permOps);
-
-		await loadApprovals();
-		await loadStats();
-		renderNotifyList();
-	} catch (err) {
-		console.error('clearAll error', err);
-		alert('Failed to clear notifications');
-	}
+	renderNotifyList();
 }
 
 
@@ -1105,6 +1116,9 @@ onAuthStateChanged(auth, async user => {
 
 		// Auto logout after 10 min idle
 		initAutoLogout();
+
+		// Pre-load invite colleges
+		loadInviteColleges();
 
 		// Update session time every second
 		setInterval(updateSessionInfo, 1000);
@@ -4417,13 +4431,38 @@ if (typeof emailjs !== 'undefined' && EMAILJS_PUBLIC_KEY !== "YOUR_EMAILJS_PUBLI
 	emailjs.init(EMAILJS_PUBLIC_KEY);
 }
 
-const inviteEmail = document.getElementById("inviteEmail");
-const inviteRole = document.getElementById("inviteRole");
-const sendInviteBtn = document.getElementById("sendInviteBtn");
-const inviteStatusMessage = document.getElementById("inviteMessage");
-const invitesTableBody = document.getElementById("invitesTableBody");
-const refreshInvitesBtn = document.getElementById("refreshInvitesBtn");
-const clearAllInvitesBtn = document.getElementById("clearAllInvitesBtn");
+// Load colleges into the invite college dropdown
+async function loadInviteColleges() {
+	if (!inviteCollege) return;
+	try {
+		const snap = await getDocs(collection(db, "colleges"));
+		inviteCollege.innerHTML = '<option value="" disabled selected>Select College</option>';
+		const colleges = [];
+		snap.forEach(d => colleges.push({ id: d.id, ...d.data() }));
+		colleges.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+		colleges.forEach(c => {
+			const opt = document.createElement("option");
+			opt.value = c.id;
+			opt.textContent = `${c.name} (${c.code || 'N/A'})`;
+			opt.dataset.name = c.name;
+			inviteCollege.appendChild(opt);
+		});
+	} catch (e) { console.warn("loadInviteColleges:", e); }
+}
+
+// Show/hide college field based on role — superadmin is system-wide, no college needed
+if (inviteRole) {
+	inviteRole.addEventListener("change", () => {
+		if (!inviteCollegeField) return;
+		if (inviteRole.value === "superadmin") {
+			inviteCollegeField.style.display = "none";
+			if (inviteCollege) inviteCollege.required = false;
+		} else {
+			inviteCollegeField.style.display = "";
+			if (inviteCollege) inviteCollege.required = true;
+		}
+	});
+}
 
 // Refresh Invites
 if (refreshInvitesBtn) {
@@ -4507,9 +4546,17 @@ if (sendInviteBtn) {
 	sendInviteBtn.onclick = async () => {
 		const email = inviteEmail?.value.trim();
 		const role = inviteRole?.value;
+		const selectedCollegeId = inviteCollege?.value || null;
+		const selectedCollegeName = inviteCollege?.options[inviteCollege.selectedIndex]?.dataset?.name || inviteCollege?.options[inviteCollege.selectedIndex]?.text?.split(' (')[0] || null;
 
 		if (!email || !role) {
 			showInviteMessage("Please fill in all fields", "error");
+			return;
+		}
+
+		// College is required for all non-superadmin roles
+		if (role !== "superadmin" && !selectedCollegeId) {
+			showInviteMessage("Please select a college for this invitation", "error");
 			return;
 		}
 
@@ -4560,14 +4607,14 @@ if (sendInviteBtn) {
 
 			// Add college information for non-super admin roles
 			if (role !== "superadmin") {
-				inviteData.collegeId = currentCollegeId;
-				inviteData.collegeName = currentCollegeName || "Your College";
+				inviteData.collegeId = selectedCollegeId;
+				inviteData.collegeName = selectedCollegeName;
 			}
 
 			await setDoc(doc(db, "adminInvites", token), inviteData);
 
 			// Send email via EmailJS
-			const registrationLink = `${window.location.origin}/register.html?token=${token}`;
+			const registrationLink = `${WEBSITE_URL}/register.html?token=${token}`;
 
 			const emailParams = {
 				to_email: email,
@@ -4575,7 +4622,7 @@ if (sendInviteBtn) {
 				role: role.toUpperCase(),
 				registration_link: registrationLink,
 				expires_in: "2 hours",
-				college_name: role === "superadmin" ? "Multi-College System" : (currentCollegeName || "Your College")
+				college_name: role === "superadmin" ? "Multi-College System" : selectedCollegeName
 			};
 
 			await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailParams);
@@ -4588,6 +4635,8 @@ if (sendInviteBtn) {
 			showInviteMessage(successMessage, "success");
 			inviteEmail.value = "";
 			inviteRole.value = "";
+			if (inviteCollege) inviteCollege.value = "";
+			if (inviteCollegeField) inviteCollegeField.style.display = "";
 			loadPendingInvites();
 
 		} catch (error) {
@@ -7568,6 +7617,11 @@ async function initPresence(uid) {
         });
         const el = document.getElementById('onlineUsersCount');
         if (el) el.textContent = count;
+    }, err => {
+        // Permission errors are non-critical — just show own presence
+        console.warn('Presence listener:', err.code);
+        const el = document.getElementById('onlineUsersCount');
+        if (el) el.textContent = '1';
     });
 
     // Remove presence on tab close
