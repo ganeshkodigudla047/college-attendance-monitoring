@@ -179,6 +179,12 @@ function _scheduleAdaptive() {
 function _loadAdaptiveImage(imageUrl) {
     _adaptiveCanvas = document.createElement('canvas');
     _adaptiveCtx = _adaptiveCanvas.getContext('2d', { willReadFrequently: true });
+    // Store url so toggle-on can resume
+    if (typeof localStorage !== 'undefined') {
+        try { localStorage.setItem('_adaptiveImgUrl', imageUrl); } catch(_) {}
+    }
+    // If detector is disabled, load canvas silently but don't attach listeners
+    const enabled = localStorage.getItem('adaptiveDetectorEnabled') !== '0';
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -187,11 +193,11 @@ function _loadAdaptiveImage(imageUrl) {
         _adaptiveCanvas.height = img.naturalHeight;
         _adaptiveCtx.drawImage(img, 0, 0);
         _adaptiveImg = img;
+        if (!enabled) return; // canvas ready but don't run
         _wrapTextNodes(document.body);
         _applyAdaptiveColors();
     };
     img.onerror = () => {
-        // Fallback: fetch as blob to bypass CORS
         fetch(imageUrl)
             .then(r => r.blob())
             .then(blob => createImageBitmap(blob))
@@ -200,6 +206,7 @@ function _loadAdaptiveImage(imageUrl) {
                 _adaptiveCanvas.height = bitmap.height;
                 _adaptiveCtx.drawImage(bitmap, 0, 0);
                 _adaptiveImg = { complete: true, naturalWidth: bitmap.width, naturalHeight: bitmap.height };
+                if (!enabled) return;
                 _wrapTextNodes(document.body);
                 _applyAdaptiveColors();
             })
@@ -207,6 +214,8 @@ function _loadAdaptiveImage(imageUrl) {
     };
     const sep = imageUrl.includes('?') ? '&' : '?';
     img.src = imageUrl + sep + '_cb=' + Date.now();
+
+    if (!enabled) return; // don't attach scroll/mutation listeners
 
     // Re-run on scroll and resize — drives per-letter color change as user scrolls
     window.addEventListener('scroll', _scheduleAdaptive, { passive: true });
@@ -343,6 +352,15 @@ function _buildCSS(imageUrl, isDark) {
             background-repeat: no-repeat !important;
         }
 
+        /* ── KILL ALL BLUR globally — restore only for overlays/modals ── */
+        body.has-bg *:not(.overlay):not(.modal):not(#loadingScreen):not(.loading-overlay) {
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        /* Restore blur for overlays and modals only */
+        body.has-bg .overlay { backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; }
+        body.has-bg .modal   { backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important; }
+
         /* ── HEADER & SIDEBAR: fully transparent ── */
         .header, .sidebar, .sidebar-footer,
         .nav-item, .sidebar-nav, .sidebar-menu,
@@ -370,9 +388,7 @@ function _buildCSS(imageUrl, isDark) {
 
         /* ── ALL CONTENT BOXES: fully transparent ── */
         .page.section, .section, .page,
-        .page.section *, .section *, .page *,
-        #home, #home *,
-        #homePage, #homePage *,
+        #home, #homePage,
         .status-box, .admin-settings-box,
         .home-session-box, .mark-session-box, .attendance-box,
         .profile-card-v2,
@@ -518,6 +534,83 @@ function _buildCSS(imageUrl, isDark) {
         body.has-bg button, body.has-bg .btn, body.has-bg [class*="btn"] {
             text-shadow: none !important;
         }
+        /* ── CARD HOVER — must come last to beat box-shadow:none above ── */
+        body.has-bg .card,
+        body.has-bg .stat-card,
+        body.has-bg .sa-stat-card,
+        body.has-bg .sa-card,
+        body.has-bg .sa-activity-card,
+        body.has-bg .sa-attention,
+        body.has-bg .session-card,
+        body.has-bg .status-box,
+        body.has-bg .admin-settings-box,
+        body.has-bg .admin-setting-item,
+        body.has-bg .profile-info-item-v2 {
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
+            cursor: default;
+        }
+        body.has-bg .card:hover,
+        body.has-bg .stat-card:hover,
+        body.has-bg .sa-stat-card:hover,
+        body.has-bg .sa-card:hover,
+        body.has-bg .sa-activity-card:hover,
+        body.has-bg .sa-attention:hover,
+        body.has-bg .session-card:hover,
+        body.has-bg .status-box:hover,
+        body.has-bg .admin-settings-box:hover,
+        body.has-bg .admin-setting-item:hover,
+        body.has-bg .profile-info-item-v2:hover {
+            transform: translateY(-4px) !important;
+            box-shadow: 0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.18) !important;
+            background: rgba(255,255,255,0.13) !important;
+        }
+
+        /* ── FORCE TRANSPARENT on elements with hardcoded backgrounds ── */
+        body.has-bg .sa-greeting,
+        body.has-bg .greeting-container {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        body.has-bg .sa-attention-list li,
+        body.has-bg .sa-pending-item,
+        body.has-bg .sa-pending-breakdown li,
+        body.has-bg .sa-info-row,
+        body.has-bg .sa-config-item,
+        body.has-bg .sa-status-badge,
+        body.has-bg .sa-calendar {
+            background: transparent !important;
+            border-color: ${borderColor} !important;
+        }
+        body.has-bg .sa-colleges-table th,
+        body.has-bg .sa-activity-table thead,
+        body.has-bg .sa-activity-table thead th {
+            background: rgba(15,23,42,0.6) !important;
+            color: rgba(255,255,255,0.8) !important;
+            border-color: ${borderColor} !important;
+        }
+        body.has-bg .sa-activity-table tbody tr:hover,
+        body.has-bg .sa-colleges-table tbody tr:hover {
+            background: rgba(255,255,255,0.1) !important;
+        }
+        body.has-bg .sa-activity-actions button {
+            background: rgba(255,255,255,0.12) !important;
+            border-color: ${borderColor} !important;
+            color: ${textColor} !important;
+        }
+        body.has-bg .sa-holiday-badge {
+            background: rgba(255,255,255,0.15) !important;
+            border-color: rgba(255,255,255,0.3) !important;
+        }
+        body.has-bg .sa-empty-state {
+            background: rgba(255,255,255,0.08) !important;
+            border-color: ${borderColor} !important;
+        }
+        body.has-bg .sa-config-item .badge,
+        body.has-bg .sa-colleges-table .badge.ok,
+        body.has-bg .sa-colleges-table .badge.warn {
+            background: rgba(255,255,255,0.15) !important;
+            color: ${textColor} !important;
+        }
     `;
 }
 
@@ -586,6 +679,49 @@ export async function loadAndApplyBackground(collegeId) {
     } catch (err) {
         console.warn("college-background: could not load background", err);
     }
+}
+
+/**
+ * Toggle the adaptive color detector on/off.
+ * Persists preference to localStorage.
+ */
+export function setAdaptiveDetector(enabled) {
+    localStorage.setItem('adaptiveDetectorEnabled', enabled ? '1' : '0');
+    if (enabled) {
+        if (_adaptiveImg && !_adaptiveMutationObserver) {
+            // Re-attach listeners and re-wrap
+            _wrapTextNodes(document.body);
+            _applyAdaptiveColors();
+            window.addEventListener('scroll', _scheduleAdaptive, { passive: true });
+            window.addEventListener('resize', _scheduleAdaptive, { passive: true });
+            _adaptiveMutationObserver = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    for (const node of m.addedNodes) {
+                        if (node.nodeType === 1) _wrapTextNodes(node);
+                    }
+                }
+                _scheduleAdaptive();
+            });
+            _adaptiveMutationObserver.observe(document.body, { childList: true, subtree: true });
+        } else if (_adaptiveUrl) {
+            _loadAdaptiveImage(_adaptiveUrl);
+        }
+    } else {
+        // Stop listeners but keep canvas/image so we can resume
+        window.removeEventListener('scroll', _scheduleAdaptive);
+        window.removeEventListener('resize', _scheduleAdaptive);
+        if (_adaptiveRaf) { cancelAnimationFrame(_adaptiveRaf); _adaptiveRaf = null; }
+        if (_adaptiveMutationObserver) { _adaptiveMutationObserver.disconnect(); _adaptiveMutationObserver = null; }
+        // Reset all adaptive span colors back to inherited
+        document.querySelectorAll(`span[data-adaptive-colored]`).forEach(el => {
+            el.style.removeProperty('color');
+            el.style.removeProperty('text-shadow');
+        });
+    }
+}
+
+export function isAdaptiveDetectorEnabled() {
+    return localStorage.getItem('adaptiveDetectorEnabled') !== '0';
 }
 
 /**
