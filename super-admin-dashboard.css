@@ -1,1026 +1,2967 @@
-/* ===== SUPER ADMIN DASHBOARD SPECIFIC STYLES ===== */
+<!DOCTYPE html>
+<html lang="en">
 
-/* ===== PROFESSIONAL LOADING OVERLAY ===== */
-.loading-overlay {
-	position: fixed;
-	inset: 0;
-	background: rgba(255, 255, 255, 0.1);
-	backdrop-filter: blur(10px);
-	-webkit-backdrop-filter: blur(10px);
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	z-index: 9999;
-	animation: fadeIn 0.3s ease-out;
-	overflow: hidden;
-}
+<head>
+	<meta charset="UTF-8">
+	<title>Super Admin Dashboard</title>
+	<link rel="stylesheet" href="super-admin-dashboard.css?v=20260318">
+	<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+	<style>
+		/* SMOOTH ANIMATIONS */
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
 
-.loading-overlay.fade-out {
-	animation: fadeOut 0.3s ease-out forwards;
-}
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
 
-/* Prevent body scroll when loading */
-body:has(.loading-overlay:not(.fade-out)) {
-	overflow: hidden;
-}
+		.section:not(.hidden) {
+			animation: fadeIn 0.3s ease-out;
+		}
 
-.loading-container {
-	text-align: center;
-	animation: fadeInUp 0.5s ease-out;
-}
+		/* Admin Specific Overrides */
+		.main {
+			max-width: 1200px;
+			margin-left: 80px;
+			margin-right: auto;
+		}
 
-.loading-icon {
-	position: relative;
-	width: 80px;
-	height: 80px;
-	margin: 0 auto 32px;
-}
+		.sidebar.show ~ .main {
+			margin-left: 280px;
+		}
 
-.loading-icon svg {
-	transform: rotate(-90deg);
-}
+		@media (max-width: 768px) {
+			.sidebar {
+				left: -280px;
+				width: 280px;
+			}
+			.sidebar.show {
+				left: 0;
+			}
+			.main {
+				margin-left: 0 !important;
+			}
+			.sidebar.show ~ .main {
+				margin-left: 0 !important;
+			}
+		}
 
-.loading-circle-bg {
-	opacity: 0.2;
-}
+		/* ===== SUPER ADMIN HOME - Clean layout ===== */
+		#home {
+			--home-bg: #f8fafc;
+			--home-card-bg: #ffffff;
+			--home-border: #e2e8f0;
+			--home-text: #1e293b;
+			--home-muted: #64748b;
+			--home-accent: #3b82f6;
+			--home-radius: 16px;
+			--home-radius-sm: 12px;
+			--home-shadow: 0 1px 3px rgba(0,0,0,0.06);
+			--home-shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+			padding: 0 4px;
+		}
 
-.loading-circle-progress {
-	stroke-dasharray: 226;
-	stroke-dashoffset: 226;
-	animation: progressCircle 2s ease-in-out infinite;
-}
+		.sa-greeting {
+			border-radius: var(--home-radius);
+			padding: 28px 32px;
+			margin-bottom: 28px;
+			color: #fff;
+			position: relative;
+			overflow: hidden;
+			box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+			transition: background 1.2s ease;
+			text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+		}
+		.sa-greeting-inner { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; }
+		.sa-greeting h2 { margin: 0 0 4px 0; font-size: 1.65rem; font-weight: 700; letter-spacing: -0.02em; }
+		.sa-greeting p { margin: 0; font-size: 0.9rem; opacity: 0.95; }
+		.sa-greeting .sa-time-icon {
+			position: absolute;
+			top: 20px;
+			right: 24px;
+			font-size: 72px;
+			opacity: 0.35;
+			transition: opacity 0.5s ease;
+			pointer-events: none;
+		}
+		.sa-greeting-orb { pointer-events: none; }
+		.sa-holiday-badge {
+			background: rgba(255,255,255,0.22);
+			border: 1px solid rgba(255,255,255,0.4);
+			padding: 10px 20px;
+			border-radius: 999px;
+			font-size: 0.875rem;
+			font-weight: 600;
+			backdrop-filter: blur(10px);
+			box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+		}
 
-.loading-icon-text {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
-	font-size: 20px;
-	font-weight: 800;
-	color: #3b82f6;
-	letter-spacing: 1px;
-}
+		.sa-section-title { font-size: 0.8rem; font-weight: 600; color: var(--home-muted); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 16px; }
+		.sa-stats-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+			gap: 16px;
+			margin-bottom: 28px;
+		}
+		.sa-stat-card {
+			background: var(--home-card-bg);
+			border: 1px solid var(--home-border);
+			border-radius: var(--home-radius-sm);
+			padding: 20px;
+			box-shadow: var(--home-shadow);
+			transition: box-shadow 0.2s ease, transform 0.2s ease;
+		}
+		.sa-stat-card:hover {
+			box-shadow: var(--home-shadow-hover);
+			transform: translateY(-2px);
+		}
+		.sa-stat-card .label { font-size: 0.75rem; font-weight: 600; color: var(--home-muted); text-transform: uppercase; letter-spacing: 0.03em; margin-bottom: 6px; }
+		.sa-stat-card .value { font-size: 1.75rem; font-weight: 800; color: var(--home-text); line-height: 1.2; letter-spacing: -0.02em; }
+		.sa-stat-card .hint { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; }
+		.sa-stat-card.accent-1 { border-left: 4px solid #6366f1; }
+		.sa-stat-card.accent-2 { border-left: 4px solid #ec4899; }
+		.sa-stat-card.accent-3 { border-left: 4px solid #0ea5e9; }
+		.sa-stat-card.accent-4 { border-left: 4px solid #10b981; }
+		.sa-stat-card.accent-5 { border-left: 4px solid #f59e0b; }
+		.sa-stat-card.accent-6 { border-left: 4px solid #14b8a6; }
 
-.loading-title {
-	font-size: 26px;
-	font-weight: 700;
-	color: #0f172a;
-	margin: 0 0 8px 0;
-	letter-spacing: -0.5px;
-}
+		.sa-cards-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+			gap: 20px;
+			margin-bottom: 28px;
+		}
+		.sa-card {
+			background: var(--home-card-bg);
+			border: 1px solid var(--home-border);
+			border-radius: var(--home-radius);
+			padding: 24px;
+			box-shadow: var(--home-shadow);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+		.sa-card:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+		}
+		.sa-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+		.sa-card-header .icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+		.sa-card-header .icon.green { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #047857; }
+		.sa-card-header .icon.blue { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; }
+		.sa-card-header h3 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--home-text); }
+		.sa-card-header p { margin: 2px 0 0 0; font-size: 0.8rem; color: var(--home-muted); }
+		.sa-info-row {
+			display: flex; justify-content: space-between; align-items: center;
+			padding: 12px 14px;
+			background: #f8fafc;
+			border-radius: 8px;
+			margin-bottom: 10px;
+			font-size: 0.875rem;
+		}
+		.sa-info-row:last-of-type { margin-bottom: 14px; }
+		.sa-info-row .k { color: var(--home-muted); font-weight: 600; }
+		.sa-info-row .v { color: var(--home-text); font-weight: 700; }
+		.sa-status-badge {
+			padding: 14px;
+			background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+			border: 1px solid #86efac;
+			border-radius: 10px;
+			text-align: center;
+		}
+		.sa-status-badge .title { font-size: 0.85rem; font-weight: 700; color: #065f46; margin-bottom: 4px; }
+		.sa-status-badge .value { font-size: 1.25rem; font-weight: 800; color: #059669; }
+		.sa-config-item {
+			display: flex; justify-content: space-between; align-items: center;
+			padding: 14px 16px;
+			background: #f8fafc;
+			border-radius: 10px;
+			margin-bottom: 10px;
+		}
+		.sa-config-item:last-child { margin-bottom: 0; }
+		.sa-config-item .label { font-size: 0.875rem; font-weight: 600; color: var(--home-muted); }
+		.sa-config-item .sublabel { font-size: 0.75rem; color: #94a3b8; margin-top: 2px; }
+		.sa-config-item .badge { padding: 6px 14px; background: #dcfce7; color: #166534; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
 
-.loading-subtitle {
-	font-size: 14px;
-	font-weight: 500;
-	color: #64748b;
-	margin: 0 0 24px 0;
-	letter-spacing: 0.5px;
-}
+		.sa-activity-card {
+			background: var(--home-card-bg);
+			border: 1px solid var(--home-border);
+			border-radius: var(--home-radius);
+			padding: 24px;
+			box-shadow: var(--home-shadow);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+		.sa-activity-card:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+		}
+		.sa-activity-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+		.sa-activity-header .left { display: flex; align-items: center; gap: 12px; }
+		.sa-activity-header .icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #6d28d9; }
+		.sa-activity-header h3 { margin: 0; font-size: 1rem; font-weight: 700; color: var(--home-text); }
+		.sa-activity-header .sub { margin: 2px 0 0 0; font-size: 0.8rem; color: var(--home-muted); }
+		.sa-activity-actions { display: flex; gap: 8px; }
+		.sa-activity-actions button {
+			padding: 8px 14px;
+			border-radius: 8px;
+			border: 1px solid var(--home-border);
+			background: #f8fafc;
+			color: var(--home-muted);
+			font-weight: 600;
+			font-size: 0.8rem;
+			cursor: pointer;
+			transition: background 0.2s, color 0.2s;
+		}
+		.sa-activity-actions button:hover { background: #e2e8f0; color: var(--home-text); }
+		.sa-activity-actions button.danger { background: #fef2f2; color: #991b1b; }
+		.sa-activity-actions button.danger:hover { background: #fee2e2; }
+		.sa-activity-table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+		.sa-activity-table thead { background: #f8fafc; }
+		.sa-activity-table th { text-align: left; padding: 12px 14px; font-weight: 600; color: var(--home-muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.03em; border-bottom: 1px solid var(--home-border); }
+		.sa-activity-table td { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; color: var(--home-text); }
+		.sa-activity-table tbody tr:last-child td { border-bottom: none; }
+		.sa-activity-table tbody tr:hover { background: #fafafa; }
 
-.loading-dots {
-	display: flex;
-	justify-content: center;
-	gap: 8px;
-	margin-bottom: 16px;
-}
+		/* Quick actions */
+		.sa-quick-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 24px; }
+		.sa-quick-action {
+			display: inline-flex; align-items: center; gap: 8px;
+			padding: 10px 18px;
+			background: var(--home-card-bg);
+			border: 1px solid var(--home-border);
+			border-radius: 10px;
+			color: var(--home-text);
+			font-size: 0.875rem; font-weight: 600;
+			text-decoration: none;
+			cursor: pointer;
+			box-shadow: var(--home-shadow);
+			transition: all 0.2s ease;
+		}
+		.sa-quick-action:hover { background: #f8fafc; border-color: #cbd5e1; box-shadow: var(--home-shadow-hover); transform: translateY(-1px); }
+		.sa-quick-action.primary { background: #3b82f6; border-color: #2563eb; color: #fff; }
+		.sa-quick-action.primary:hover { background: #2563eb; color: #fff; }
 
-.dot {
-	width: 8px;
-	height: 8px;
-	background: #3b82f6;
-	border-radius: 50%;
-	animation: dotPulse 1.4s ease-in-out infinite;
-}
+		/* Pending breakdown */
+		.sa-pending-breakdown {
+			display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;
+			margin-bottom: 24px;
+		}
+		.sa-pending-item {
+			display: flex; align-items: center; justify-content: space-between;
+			padding: 12px 14px;
+			background: #fffbeb;
+			border: 1px solid #fde68a;
+			border-radius: 10px;
+			font-size: 0.8rem;
+		}
+		.sa-pending-item a { color: #b45309; font-weight: 700; text-decoration: none; }
+		.sa-pending-item a:hover { text-decoration: underline; }
+		.sa-pending-item .n { font-weight: 800; color: #1e293b; margin-left: 6px; }
 
-.dot:nth-child(1) {
-	animation-delay: 0s;
-}
+		/* Needs attention */
+		.sa-attention {
+			margin-bottom: 24px;
+			background: var(--home-card-bg);
+			border: 1px solid var(--home-border);
+			border-radius: var(--home-radius-sm);
+			padding: 20px;
+			box-shadow: var(--home-shadow);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+		.sa-attention:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 12px 28px rgba(0,0,0,0.1);
+		}
+		.sa-attention .sa-section-title { margin-bottom: 12px; }
+		.sa-attention-list { list-style: none; padding: 0; margin: 0; }
+		.sa-attention-list li {
+			display: flex; align-items: center; gap: 12px;
+			padding: 12px 14px;
+			background: #fffbeb;
+			border: 1px solid #fde68a;
+			border-radius: 10px;
+			margin-bottom: 8px;
+			font-size: 0.875rem;
+			color: var(--home-text);
+		}
+		.sa-attention-list li:last-child { margin-bottom: 0; }
+		.sa-attention-list li .icon { font-size: 1.1rem; flex-shrink: 0; }
+		.sa-attention-list li .text { flex: 1; }
+		.sa-attention-list li a { color: #b45309; font-weight: 600; text-decoration: none; }
+		.sa-attention-list li a:hover { text-decoration: underline; }
+		.sa-attention.empty { display: none !important; }
 
-.dot:nth-child(2) {
-	animation-delay: 0.2s;
-}
+		/* Calendar context */
+		.sa-calendar {
+			display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;
+			padding: 12px 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; font-size: 0.875rem;
+		}
+		.sa-calendar span { color: var(--home-muted); }
+		.sa-calendar strong { color: var(--home-text); }
 
-.dot:nth-child(3) {
-	animation-delay: 0.4s;
-}
+		/* Colleges at a glance */
+		.sa-colleges-wrap { margin-bottom: 24px; }
+		.sa-colleges-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+		.sa-colleges-table th { text-align: left; padding: 10px 12px; background: #f8fafc; color: var(--home-muted); font-weight: 600; border-bottom: 1px solid var(--home-border); }
+		.sa-colleges-table td { padding: 10px 12px; border-bottom: 1px solid #f1f5f9; }
+		.sa-colleges-table .link { color: #3b82f6; font-weight: 600; cursor: pointer; }
+		.sa-colleges-table .link:hover { text-decoration: underline; }
+		.sa-colleges-table .badge { padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; }
+		.sa-colleges-table .badge.ok { background: #dcfce7; color: #166534; }
+		.sa-colleges-table .badge.warn { background: #fef3c7; color: #92400e; }
 
-.loading-status {
-	font-size: 13px;
-	font-weight: 500;
-	color: #64748b;
-	margin: 0;
-}
+		/* Empty state */
+		.sa-empty-state {
+			text-align: center; padding: 40px 24px; margin-bottom: 24px;
+			background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+			border: 2px dashed #93c5fd; border-radius: var(--home-radius);
+		}
+		.sa-empty-state h3 { margin: 0 0 8px 0; font-size: 1.25rem; color: var(--home-text); }
+		.sa-empty-state p { margin: 0 0 16px 0; color: var(--home-muted); font-size: 0.9rem; }
+		.sa-empty-state .btn { display: inline-block; padding: 12px 24px; background: #3b82f6; color: #fff; font-weight: 700; border-radius: 10px; cursor: pointer; margin-top: 8px; }
+		.sa-empty-state .btn:hover { background: #2563eb; }
+		.sa-empty-state.hidden { display: none !important; }
 
-/* Animations */
-@keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
+		@media (max-width: 640px) {
+			#home { padding: 0; }
+			.sa-greeting { padding: 20px; }
+			.sa-greeting h2 { font-size: 1.35rem; }
+			.sa-greeting .sa-time-icon { font-size: 48px; top: 12px; right: 12px; }
+			.sa-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+			.sa-stat-card .value { font-size: 1.4rem; }
+			.sa-cards-grid { grid-template-columns: 1fr; }
+			.sa-quick-actions { gap: 8px; }
+			.sa-pending-breakdown { grid-template-columns: 1fr 1fr; }
+			.main { padding: 12px !important; }
+			.page.section { padding: 16px !important; border-radius: 16px !important; }
+		}
 
-@keyframes fadeOut {
-	from {
-		opacity: 1;
-	}
-	to {
-		opacity: 0;
-	}
-}
+		.hidden {
+			display: none !important;
+		}
 
-@keyframes fadeInUp {
-	from {
-		opacity: 0;
-		transform: translateY(20px);
-	}
-	to {
-		opacity: 1;
-		transform: translateY(0);
-	}
-}
+		.submenu {
+			background: #f8fafc;
+			list-style: none;
+			padding: 0;
+			margin: 0;
+			border-left: 3px solid #e2e8f0;
+		}
 
-@keyframes progressCircle {
-	0% {
-		stroke-dashoffset: 226;
-	}
-	50% {
-		stroke-dashoffset: 0;
-	}
-	100% {
-		stroke-dashoffset: -226;
-	}
-}
+		.submenu li {
+			padding: 10px 16px 10px 32px !important;
+			font-size: 13px;
+		}
 
-@keyframes dotPulse {
-	0%, 80%, 100% {
-		transform: scale(0.8);
-		opacity: 0.5;
-	}
-	40% {
-		transform: scale(1.2);
-		opacity: 1;
-	}
-}
+		.submenu.hidden {
+			display: none;
+		}
 
-/* Mobile responsive */
-@media (max-width: 640px) {
-	.loading-icon {
-		width: 70px;
-		height: 70px;
-	}
+		input[type="text"],
+		input[type="search"],
+		select,
+		input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]) {
+			padding: 10px 16px;
+			border: 1px solid #e2e8f0;
+			border-radius: 8px;
+			font-size: 14px;
+			width: 100%;
+			max-width: 300px;
+			margin-bottom: 16px;
+			outline: none;
+			transition: border-color 0.2s;
+		}
+
+		input:focus {
+			border-color: #3b82f6;
+		}
+
+		/* Invite section specific styles */
+		#inviteEmail:focus,
+		#inviteRole:focus {
+			border-color: #3b82f6;
+			outline: none;
+			box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+		}
+
+		#sendInviteBtn:hover {
+			background: #1d4ed8;
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+		}
+
+		#sendInviteBtn:active {
+			transform: translateY(0);
+		}
+
+		#sendInviteBtn:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		table {
+			margin-top: 10px;
+			background: white;
+			border-radius: 12px;
+			overflow: hidden;
+			box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+		}
+
+		/* Messages Section Styles */
+		.message-field {
+			margin-bottom: 15px;
+		}
+
+		.message-field label {
+			display: block;
+			margin-bottom: 5px;
+			color: #374151;
+			font-weight: 500;
+		}
+
+		.message-field div {
+			color: #1f2937;
+		}
+
+		.message-status {
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			padding: 4px 8px;
+			border-radius: 12px;
+			font-size: 12px;
+			font-weight: 500;
+		}
+
+		.message-status.unread {
+			background: #fef3c7;
+			color: #92400e;
+		}
+
+		.message-status.read {
+			background: #d1fae5;
+			color: #065f46;
+		}
+
+		.message-preview {
+			max-width: 200px;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		.btn-danger {
+			background: #dc2626;
+			color: white;
+			border: none;
+			padding: 8px 16px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-size: 14px;
+			transition: background 0.2s;
+		}
+
+		.btn-danger:hover {
+			background: #b91c1c;
+		}
+
+		.modal-overlay {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.5);
+			backdrop-filter: blur(4px);
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+			padding: 20px;
+		}
+
+		.modal-card {
+			background: white;
+			border-radius: 16px;
+			padding: 24px;
+			width: 100%;
+			max-height: 90vh;
+			overflow-y: auto;
+			box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+		}
+
+		.modal-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
+			padding-bottom: 15px;
+			border-bottom: 1px solid #e5e7eb;
+		}
+
+		.modal-header h3 {
+			margin: 0;
+			color: #1f2937;
+		}
+
+		.close-btn {
+			background: #f3f4f6;
+			border: none;
+			color: #6b7280;
+			width: 32px;
+			height: 32px;
+			border-radius: 50%;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s;
+		}
+
+		.close-btn:hover {
+			background: #e5e7eb;
+			color: #374151;
+		}
+
+		section h2 {
+			font-size: 20px;
+			font-weight: 800;
+			color: #0f172a;
+			margin-bottom: 20px;
+		}
+
+		.action-btn {
+			padding: 6px 12px;
+			font-size: 12px;
+			font-weight: 600;
+			border-radius: 6px;
+		}
+
+		/* Mini Profile Hover Effect */
+		.mini-profile {
+			transition: all 0.2s ease;
+			border-radius: 8px;
+			padding: 4px;
+			margin: -4px;
+		}
+
+		.mini-profile:hover {
+			background: #f8fafc;
+			transform: translateY(-1px);
+		}
+
+		/* Sidebar Overlay */
+		.sidebar-overlay {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.5);
+			z-index: 998;
+			opacity: 0;
+			visibility: hidden;
+			transition: opacity 0.3s ease, visibility 0.3s ease;
+		}
+
+		.sidebar-overlay.show {
+			opacity: 1;
+			visibility: visible;
+		}
+
+		/* ===== MOBILE RESPONSIVENESS ===== */
+		@media (max-width: 640px) {
+			.main {
+				padding: 12px;
+			}
+
+			.cards-container {
+				grid-template-columns: 1fr 1fr !important;
+				gap: 12px !important;
+			}
+
+			.card {
+				padding: 16px !important;
+			}
+
+			.card-title {
+				font-size: 11px !important;
+			}
+
+			.card-value {
+				font-size: 20px !important;
+			}
+
+			.admin-settings-grid {
+				grid-template-columns: 1fr 1fr !important;
+				gap: 12px !important;
+			}
+
+			.admin-setting-item {
+				padding: 12px !important;
+			}
+
+			.admin-setting-label {
+				font-size: 11px !important;
+			}
+
+			.admin-setting-value {
+				font-size: 18px !important;
+			}
+
+			section h2 {
+				font-size: 18px !important;
+			}
+
+			.tab-scroller {
+				overflow-x: auto !important;
+				width: 100% !important;
+				-webkit-overflow-scrolling: touch;
+			}
+
+			.sub-tab-btn {
+				white-space: nowrap !important;
+				font-size: 13px !important;
+				padding: 8px 16px !important;
+			}
+
+			.table-responsive {
+				overflow-x: auto;
+				-webkit-overflow-scrolling: touch;
+			}
+
+			table {
+				min-width: 600px;
+			}
+
+			.action-btn {
+				padding: 4px 8px !important;
+				font-size: 11px !important;
+			}
+
+			input[type="text"],
+			input[type="search"],
+			select {
+				max-width: 100% !important;
+				font-size: 13px !important;
+			}
+
+			.status-box {
+				padding: 16px !important;
+			}
+
+			.status-title {
+				font-size: 14px !important;
+			}
+
+			.home-session-name {
+				font-size: 13px !important;
+			}
+
+			.home-time-left {
+				font-size: 20px !important;
+			}
+
+			/* Students section mobile */
+			#students input,
+			#students select,
+			#students button {
+				width: 100%;
+				margin-bottom: 8px;
+			}
+
+			#students table {
+				display: block;
+				overflow-x: auto;
+				white-space: nowrap;
+				-webkit-overflow-scrolling: touch;
+			}
+
+			/* Invite section mobile */
+			#inviteAdmin .status-box>div[style*="grid-template-columns"] {
+				grid-template-columns: 1fr !important;
+				gap: 16px !important;
+			}
+
+			#inviteAdmin .status-box>div[style*="grid-template-columns"]>div {
+				min-width: 100% !important;
+			}
+
+			#sendInviteBtn {
+				width: 100% !important;
+			}
+
+			/* Sidebar mobile */
+			.sidebar {
+				width: 280px;
+				left: -280px;
+			}
+
+			.sidebar.show {
+				left: 0;
+			}
+
+			.sidebar-footer {
+				padding: 16px;
+			}
+
+			.mini-profile {
+				margin-bottom: 16px;
+			}
+		}
+
+		@media (max-width: 600px) {
+			.header-clock {
+				display: none;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.header-center {
+				display: none;
+			}
+
+			.cards-container {
+				grid-template-columns: 1fr 1fr !important;
+			}
+
+			.card {
+				padding: 14px !important;
+			}
+
+			.card-title {
+				font-size: 10px !important;
+			}
+
+			.card-value {
+				font-size: 18px !important;
+			}
+
+			.admin-settings-grid {
+				grid-template-columns: 1fr 1fr !important;
+			}
+
+			.admin-setting-item {
+				padding: 10px !important;
+			}
+
+			.admin-setting-label {
+				font-size: 10px !important;
+			}
+
+			.admin-setting-value {
+				font-size: 16px !important;
+			}
+
+			.greeting-container {
+				flex-direction: column !important;
+				align-items: flex-start !important;
+				gap: 8px !important;
+			}
+
+			section h2 {
+				font-size: 16px !important;
+			}
+
+			.sub-tab-btn {
+				font-size: 12px !important;
+				padding: 6px 12px !important;
+			}
+
+			.logout-btn {
+				padding: 8px 12px !important;
+				font-size: 12px !important;
+			}
+
+			.holiday-badge {
+				font-size: 11px !important;
+				padding: 4px 10px !important;
+			}
+
+			.status-box {
+				padding: 12px !important;
+			}
+
+			.status-title {
+				font-size: 13px !important;
+			}
+		}
+		/* ===== BACKGROUND TRANSPARENCY ===== */
+		.header {
+			background: transparent !important;
+			backdrop-filter: none !important;
+			box-shadow: none !important;
+		}
+		.sidebar, .sidebar-footer {
+			background: transparent !important;
+			backdrop-filter: none !important;
+			box-shadow: none !important;
+		}
+		.page.section {
+			background: transparent !important;
+			box-shadow: none !important;
+		}
+		.sa-stat-card,
+		.sa-card,
+		.sa-activity-card,
+		.sa-attention,
+		.status-box,
+		.admin-settings-box,
+		.cards-container .card,
+		.records-container,
+		.table-container {
+			background: transparent !important;
+			box-shadow: none !important;
+		}
+		.sa-info-row,
+		.sa-config-item,
+		table, th {
+			background: transparent !important;
+		}
+	</style>
+</head>
+
+<body>
+
+	<!-- Loading Screen -->
+	<div id="loadingScreen" class="loading-overlay">
+		<div class="loading-container">
+			<div class="loading-icon">
+				<svg width="80" height="80" viewBox="0 0 80 80">
+					<circle class="loading-circle-bg" cx="40" cy="40" r="36" fill="none" stroke="#e2e8f0" stroke-width="4"/>
+					<circle class="loading-circle-progress" cx="40" cy="40" r="36" fill="none" stroke="url(#gradient)" stroke-width="4" stroke-linecap="round"/>
+					<defs>
+						<linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+							<stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+							<stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+						</linearGradient>
+					</defs>
+				</svg>
+				<div class="loading-icon-text">CAM</div>
+			</div>
+			<h2 class="loading-title">College Attendance Management</h2>
+			<p class="loading-subtitle">Super Admin Dashboard</p>
+			<div class="loading-dots">
+				<span class="dot"></span>
+				<span class="dot"></span>
+				<span class="dot"></span>
+			</div>
+			<p class="loading-status">Loading your dashboard...</p>
+		</div>
+		
+		<!-- No Connection Message -->
+		<div id="noConnectionMessage" class="no-connection-message hidden">
+			<div class="no-connection-icon">
+				<svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+					<path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+				</svg>
+			</div>
+			<h2 class="no-connection-title">No Internet Connection</h2>
+			<p class="no-connection-text">Please check your internet connection and try again.</p>
+			<button class="retry-button" onclick="location.reload()">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+				</svg>
+				Retry
+			</button>
+		</div>
+	</div>
+
+	<header class="header">
+		<div class="header-left">
+			<button id="menuBtn" class="menu-btn" type="button" aria-label="Toggle menu">☰</button>
+		</div>
+
+		<div class="header-center">
+			<div class="user-name" id="adminName">Admin Name</div>
+			<div class="user-role" id="adminRole">Administrator</div>
+		</div>
+
+		<div class="header-right">
+			<div class="header-clock" id="headerClock">
+				<div class="clock-top">
+					<span id="currentDate">--/--/----</span>
+					&nbsp;•&nbsp;
+					<span id="currentTime">--:--:--</span>
+				</div>
+				<div class="clock-bottom" id="currentDay">---</div>
+			</div>
+
+			<div class="notification" id="notifyBtn">
+				<span class="bell-icon">🔔</span>
+				<span id="notifyCount" class="notification-badge hidden">0</span>
+				<div id="notifyList" class="notify-list hidden" aria-hidden="true"></div>
+			</div>
+
+			<button id="logoutBtn" class="logout-btn" type="button">
+				<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+				Logout
+			</button>
+		</div>
+	</header>
+
+
+
+
+	<nav id="sidebar" class="sidebar show">
+		<ul>
+			<li data-sec="home" data-icon="✨" class="active"><span>Dashboard</span></li>
+			<li data-sec="approvals" data-icon="✅"><span>Approvals</span></li>
+			<li data-sec="adminlist" data-icon="👨‍💼"><span>Admin Directory</span></li>
+			<li data-sec="collegelist" data-icon="🏫"><span>College Directory</span></li>
+			<li data-sec="userlist" data-icon="👥"><span>User Categories</span></li>
+			<li data-sec="invite" data-icon="🔑"><span>System Access & Invitations</span></li>
+			<li data-sec="attendance" data-icon="📊"><span>Attendance</span></li>
+			<li data-sec="profile" data-icon="👤"><span>My Profile</span></li>
+			<li data-sec="messages" data-icon="💬"><span>Messages</span></li>
+			<li id="collegeManagementLink" data-icon="🏢"><span>College Management</span></li>
+			<li id="migrationLink" data-icon="🔄"><span>Multi-College Setup</span></li>
+			<li id="settingsToggle" data-icon="⚙️"><span>Settings</span><span class="submenu-arrow">▼</span></li>
+			<div id="settingsSubmenu" class="submenu hidden" aria-hidden="true">
+				<ul>
+					<li id="basicSettingsToggle">
+						<span>Basic Settings</span>
+						<span style="font-size: 10px;">▼</span>
+					</li>
+					<div id="basicSettingsSubmenu" class="submenu hidden">
+						<ul>
+							<li data-sec="timing"><span>Timing</span></li>
+							<li data-sec="gps"><span>GPS Configuration</span></li>
+							<li data-sec="holiday"><span>Holiday Management</span></li>
+						</ul>
+					</div>
+					<li id="advancedSettingsToggle">
+						<span>Advanced</span>
+						<span style="font-size: 10px;">▼</span>
+					</li>
+					<div id="advancedSettingsSubmenu" class="submenu hidden">
+						<ul>
+							<li data-sec="dayscount"><span>Days Count</span></li>
+							<li data-sec="bgaudit"><span>🖼️ Background Audit</span></li>
+							<li data-sec="platformbg"><span>🌐 Platform Background</span></li>
+							<li data-sec="superadminbg"><span>🎨 My Dashboard BG</span></li>
+						<li data-sec="admanage"><span>📢 Advertisement</span></li>
+						</ul>
+					</div>
+					<li id="emailSettingsToggle">
+						<span>📧 Email Reminders</span>
+						<span style="font-size: 10px;">▼</span>
+					</li>
+					<div id="emailSettingsSubmenu" class="submenu hidden">
+						<ul>
+							<li data-sec="emailreminders"><span>Email Reminders</span></li>
+						</ul>
+					</div>
+				</ul>
+			</div>
+		</ul>
+		<div class="sidebar-footer">
+			<div class="mini-profile" style="cursor: pointer;" onclick="showSection('profile')" title="View My Profile">
+				<img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIwIDIxdi0yYTRgNCAwIDAgMC00LTRoLTRhNCA0IDAgMCAwLTQgNHYyIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ii8+PC9zdmc+"
+					alt="Profile Photo" id="sidebarProfilePhoto" class="sidebar-profile-photo" />
+				<div class="sidebar-user-info">
+					<div class="sidebar-user-name" id="sidebarAdminName">Admin User</div>
+					<div class="sidebar-user-id" id="sidebarAdminRole">Administrator</div>
+				</div>
+			</div>
+			<button id="sidebarLogoutBtn" class="sidebar-logout-btn">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+					stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+					class="logout-icon">
+					<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+					<polyline points="16 17 21 12 16 7"></polyline>
+					<line x1="21" y1="12" x2="9" y2="12"></line>
+				</svg>
+				<span>Log Out</span>
+			</button>
+		</div>
+	</nav>
+
+	<div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+
+	<main class="main" role="main">
+
+		<!-- ADVERTISEMENT SLOT — only visible when super admin sets media -->
+		<div id="adSlot">
+			<img src="" alt="Advertisement" style="display:none;" />
+			<video autoplay muted loop playsinline style="display:none;"></video>
+			<button id="adSlotClose" title="Dismiss">✕</button>
+		</div>
+
+		<!-- HOME -->
+		<section id="home" class="page section active">
+			<!-- Greeting -->
+			<div id="greetingBlock" class="sa-greeting greeting-container">
+				<div id="bgElement1" class="sa-greeting-orb" style="position: absolute; border-radius: 50%; transition: all 1.2s ease;"></div>
+				<div id="bgElement2" class="sa-greeting-orb" style="position: absolute; border-radius: 50%; transition: all 1.2s ease;"></div>
+				<div id="bgElement3" class="sa-greeting-orb" style="position: absolute; border-radius: 50%; transition: all 1.2s ease;"></div>
+				<div id="timeIcon" class="sa-time-icon">🌅</div>
+				<div class="sa-greeting-inner">
+					<div>
+						<h2 id="welcome">Good Morning!</h2>
+						<p id="greetingSubtext">Welcome back. Here’s what’s happening today.</p>
+					</div>
+					<div id="holidayStatus" class="sa-holiday-badge holiday-badge">Working Day</div>
+				</div>
+			</div>
+
+			<!-- Quick actions -->
+			<div class="sa-quick-actions">
+				<button type="button" class="sa-quick-action primary" id="saActionColleges">🏫 College list</button>
+				<button type="button" class="sa-quick-action" id="saActionInvite">➕ Invite user</button>
+				<button type="button" class="sa-quick-action" id="saActionPending">📋 Pending approvals</button>
+				<button type="button" class="sa-quick-action" id="saActionAddCollege">🏢 Add college</button>
+			</div>
+
+			<!-- Empty state (shown when no colleges) -->
+			<div id="saEmptyState" class="sa-empty-state hidden">
+				<h3>Get started</h3>
+				<p>Add your first college to start managing attendance across institutions.</p>
+				<button type="button" class="btn" id="saEmptyAddCollege">Add your first college</button>
+			</div>
+
+			<!-- Stats -->
+			<div class="sa-stats-grid">
+				<div class="sa-stat-card accent-1">
+					<div class="label">Total Colleges</div>
+					<div id="totalColleges" class="value">0</div>
+					<div class="hint">Registered institutions</div>
+				</div>
+				<div class="sa-stat-card accent-2">
+					<div class="label">Active Colleges</div>
+					<div id="activeColleges" class="value">0</div>
+					<div class="hint">Using system</div>
+				</div>
+				<div class="sa-stat-card accent-3">
+					<div class="label">Total Users</div>
+					<div id="totalSystemUsers" class="value">0</div>
+					<div class="hint">Across all colleges</div>
+				</div>
+				<div class="sa-stat-card accent-4">
+					<div class="label">College Admins</div>
+					<div id="totalCollegeAdmins" class="value">0</div>
+					<div class="hint">Managing colleges</div>
+				</div>
+				<div class="sa-stat-card accent-5">
+					<div class="label">Pending</div>
+					<div id="pendingCount" class="value">0</div>
+					<div class="hint">Approvals</div>
+				</div>
+				<div class="sa-stat-card accent-6">
+					<div class="label">System Health</div>
+					<div id="systemHealthPercent" class="value">100%</div>
+					<div class="hint">Overall status</div>
+				</div>
+				<div class="sa-stat-card" style="border-top: 3px solid #22c55e;">
+					<div class="label">🟢 Online Now</div>
+					<div id="onlineUsersCount" class="value">—</div>
+					<div class="hint">Active in last 5 min</div>
+				</div>
+			</div>
+
+			<!-- Pending breakdown -->
+			<div id="saPendingWrap" class="sa-pending-breakdown" style="display: none;"></div>
+
+			<!-- Calendar context -->
+			<div id="saCalendar" class="sa-calendar" style="display: none;"></div>
+
+			<!-- Needs attention -->
+			<div id="saAttention" class="sa-attention">
+				<div class="sa-section-title">Needs attention</div>
+				<ul id="saAttentionList" class="sa-attention-list"></ul>
+			</div>
+
+			<!-- Colleges at a glance -->
+			<div id="saCollegesWrap" class="sa-colleges-wrap">
+				<div class="sa-section-title">Colleges at a glance</div>
+				<div class="table-responsive">
+					<table class="sa-colleges-table">
+						<thead>
+							<tr>
+								<th>College</th>
+								<th>Status</th>
+								<th>Users</th>
+								<th>Last activity</th>
+								<th></th>
+							</tr>
+						</thead>
+						<tbody id="saCollegesBody">
+							<tr><td colspan="5" style="text-align:center;color:#94a3b8;">Loading…</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- System info cards -->
+			<div class="sa-cards-grid">
+				<div class="sa-card">
+					<div class="sa-card-header">
+						<div class="icon green">🖥️</div>
+						<div>
+							<h3>Attendance Audit By College</h3>
+							<p>College-wise FN and AN status for today</p>
+						</div>
+					</div>
+					<div id="systemInfo">
+						<!-- Content will be populated dynamically -->
+					</div>
+				</div>
+
+			</div>
+
+			<!-- System Activity -->
+			<div class="sa-activity-card">
+				<div class="sa-activity-header">
+					<div class="left">
+						<div class="icon">📋</div>
+						<div>
+							<h3>System Activity</h3>
+							<p class="sub">Today’s events · cleared each day</p>
+						</div>
+					</div>
+					<div class="sa-activity-actions">
+						<button type="button" id="systemActivityRefresh">🔄 Refresh</button>
+					</div>
+				</div>
+				<div class="table-responsive">
+					<table class="sa-activity-table">
+						<thead>
+							<tr>
+								<th>Time</th>
+								<th>Source</th>
+								<th>Activity</th>
+							</tr>
+						</thead>
+						<tbody id="recentActivityBody">
+							<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</section>
+
+
+		<!-- APPROVALS -->
+
+		<section id="approvals" class="page section">
+			<h2>✅ Approvals</h2>
+
+			<div class="tab-scroller"
+				style="margin-bottom: 24px; display: flex; gap: 8px; background: #f8fafc; padding: 6px; border-radius: 12px; border: 1px solid #e2e8f0; width: fit-content; flex-wrap: wrap;">
+				<button id="showRegistrations" class="sub-tab-btn active"
+					style="padding: 9px 18px; border-radius: 8px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">User Registrations</button>
+				<button id="showProfileUpdates" class="sub-tab-btn"
+					style="padding: 9px 18px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">Profile Updates</button>
+				<button id="showManualAttendance" class="sub-tab-btn"
+					style="padding: 9px 18px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">Manual Attendance</button>
+				<button id="showPermissionRequests" class="sub-tab-btn"
+					style="padding: 9px 18px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">Permission Requests</button>
+			</div>
+
+			<div id="registrationApprovalsView">
+				<div class="controls-bar" style="margin-bottom: 16px;">
+					<input id="approvalSearch" placeholder="🔍 Search registrations..." aria-label="Search approvals" style="flex:1;">
+					<button id="approveSelected" type="button" class="btn btn-primary">✓ Approve Selected</button>
+					<button id="rejectSelected" type="button" class="btn btn-danger">✕ Reject Selected</button>
+				</div>
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th style="width:40px;"><input type="checkbox" id="selectAll"></th>
+								<th>S.No</th>
+								<th>Name</th>
+								<th>Email</th>
+								<th>Role</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody id="approvalTable"></tbody>
+					</table>
+				</div>
+			</div>
+
+			<div id="profileUpdatesView" class="hidden">
+				<div class="controls-bar" style="margin-bottom: 16px;">
+					<input id="profileUpdateSearch" placeholder="🔍 Search profile requests..." aria-label="Search profile requests" style="flex:1;">
+				</div>
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>Name</th>
+								<th>Field</th>
+								<th>Current</th>
+								<th>Proposed</th>
+								<th>Role/Dept</th>
+								<th>GPS (HOD)</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody id="profileUpdateTable">
+							<tr><td colspan="7" style="text-align:center; padding:32px; color:#94a3b8;">No pending profile requests</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div id="manualAttendanceView" class="hidden">
+				<div class="controls-bar" style="margin-bottom: 16px;">
+					<input id="manualAttendanceSearch" placeholder="🔍 Search manual attendance..." aria-label="Search manual attendance requests" style="flex:1;">
+				</div>
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>S.No</th>
+								<th>Name</th>
+								<th>Student ID</th>
+								<th>Department</th>
+								<th>Date</th>
+								<th>Session</th>
+								<th>Reason</th>
+								<th>GPS</th>
+								<th>Requested At</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody id="manualAttendanceTable">
+							<tr><td colspan="10" style="text-align:center; padding:32px; color:#94a3b8;">No pending manual attendance requests</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<div id="permissionRequestsView" class="hidden">
+				<div class="controls-bar" style="margin-bottom: 16px;">
+					<input id="permissionRequestSearch" placeholder="🔍 Search permission requests..." aria-label="Search permission requests" style="flex:1;">
+				</div>
+				<div class="table-wrap">
+					<table>
+						<thead>
+							<tr>
+								<th>S.No</th>
+								<th>Staff Name</th>
+								<th>Email</th>
+								<th>Role</th>
+								<th>Department</th>
+								<th>Requested Permissions</th>
+								<th>Requested At</th>
+								<th>Action</th>
+							</tr>
+						</thead>
+						<tbody id="permissionRequestTable">
+							<tr><td colspan="8" style="text-align:center; padding:32px; color:#94a3b8;">No pending permission requests</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+		</section>
+
+		<!-- MESSAGES & FEEDBACK -->
+		<section id="messages" class="page section">
+			<h2>Messages & Feedback</h2>
+
+			<div class="status-box" style="margin-bottom: 20px;">
+				<div class="status-title">Contact Form Submissions</div>
+				<p class="status-message">Manage messages and feedback received from the website contact form.</p>
+			</div>
+
+			<div class="admin-controls">
+				<input id="messagesSearch" type="search" placeholder="Search messages..."
+					style="max-width: 300px; margin-bottom: 0;">
+
+				<select id="messagesFilter" style="max-width: 200px; margin-bottom: 0;">
+					<option value="all">All Messages</option>
+					<option value="unread">Unread Only</option>
+					<option value="read">Read Only</option>
+					<option value="demo">Demo Requests</option>
+					<option value="pricing">Pricing Inquiries</option>
+					<option value="support">Technical Support</option>
+					<option value="partnership">Partnership</option>
+					<option value="other">Other</option>
+				</select>
+
+				<button id="refreshMessagesBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					🔄 Refresh
+				</button>
+
+				<button id="markAllReadBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					✓ Mark All Read
+				</button>
+			</div>
+
+			<div class="table-responsive">
+				<table style="width: 100%;">
+					<thead>
+						<tr>
+							<th>Status</th>
+							<th>Date</th>
+							<th>Name</th>
+							<th>Email</th>
+							<th>Institution</th>
+							<th>Subject</th>
+							<th>Message Preview</th>
+							<th>Actions</th>
+						</tr>
+					</thead>
+					<tbody id="messagesTableBody">
+						<tr>
+							<td colspan="8" style="text-align: center; padding: 40px; color: #64748b;">
+								Loading messages...
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Message Details Modal -->
+			<div id="messageModal" class="modal-overlay" style="display: none;">
+				<div class="modal-card" style="max-width: 600px;">
+					<div class="modal-header">
+						<h3>Message Details</h3>
+						<button class="close-btn" onclick="closeMessageModal()">✕</button>
+					</div>
+
+					<div class="message-details">
+						<div class="message-field">
+							<label><strong>From:</strong></label>
+							<div id="modalMessageName"></div>
+						</div>
+
+						<div class="message-field">
+							<label><strong>Email:</strong></label>
+							<div id="modalMessageEmail"></div>
+						</div>
+
+						<div class="message-field">
+							<label><strong>Institution:</strong></label>
+							<div id="modalMessageInstitution"></div>
+						</div>
+
+						<div class="message-field">
+							<label><strong>Subject:</strong></label>
+							<div id="modalMessageSubject"></div>
+						</div>
+
+						<div class="message-field">
+							<label><strong>Date:</strong></label>
+							<div id="modalMessageDate"></div>
+						</div>
+
+						<div class="message-field">
+							<label><strong>Message:</strong></label>
+							<div id="modalMessageContent"
+								style="white-space: pre-wrap; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+							</div>
+						</div>
+					</div>
+
+					<div class="modal-actions"
+						style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+						<button id="replyMessageBtn" class="btn btn-secondary">📧 Reply</button>
+						<button id="markReadBtn" class="btn btn-secondary">✓ Mark as Read</button>
+						<button id="deleteMessageBtn" class="btn btn-danger">🗑️ Delete</button>
+					</div>
+				</div>
+			</div>
+
+		</section>
+
+
+		<!-- ADMIN DIRECTORY -->
+		<section id="adminlist" class="page section">
+			<h2>👨‍💼 Administrator Directory</h2>
+
+
+			<div class="admin-controls">
+				<input id="adminSearch" type="search" placeholder="Search administrators..."
+					style="max-width: 300px; margin-bottom: 0;">
+
+				<select id="adminCollegeFilter" style="max-width: 200px; margin-bottom: 0;">
+					<option value="all">All Colleges</option>
+				</select>
+
+				<select id="adminRoleFilter" style="max-width: 200px; margin-bottom: 0;">
+					<option value="all">All Roles</option>
+					<option value="admin">Admin</option>
+					<option value="principal">Principal</option>
+					<option value="superadmin">Super Admin</option>
+				</select>
+
+				<button id="refreshAdminsBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					🔄 Refresh
+				</button>
+
+				<button id="downloadAdminsBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					📊 Download Excel
+				</button>
+			</div>
+
+			<div id="adminStatsCards"
+				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #3b82f6;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Total
+						Admins</div>
+					<div id="totalAdminsCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #10b981;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Active
+						Today</div>
+					<div id="activeAdminsCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #f59e0b;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Super
+						Admins</div>
+					<div id="superAdminsCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #8b5cf6;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">
+						Principals</div>
+					<div id="principalsCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+			</div>
+
+			<div id="adminListContainer" style="min-height: 300px;">
+				<div style="text-align: center; padding: 3rem; color: #64748b;">
+					<div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+					<p>Loading administrators...</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- COLLEGE DIRECTORY -->
+		<section id="collegelist" class="page section">
+			<h2>🏫 College Directory</h2>
+
+			<div
+				style="background: #f8fafc; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0;">
+				<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+					<span style="font-size: 1.5rem;">🏫</span>
+					<div>
+						<h3 style="margin: 0; font-size: 1rem; font-weight: 700; color: #1e293b;">System College
+							Directory</h3>
+						<p style="margin: 0.5rem 0 0 0; font-size: 0.875rem; color: #64748b;">
+							Complete overview of all colleges registered in the system with detailed information and
+							statistics.
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="admin-controls">
+				<input id="collegeSearch" type="search" placeholder="Search colleges..."
+					style="max-width: 300px; margin-bottom: 0;">
+
+				<select id="collegeStatusFilter" style="max-width: 200px; margin-bottom: 0;">
+					<option value="all">All Status</option>
+					<option value="active">Active</option>
+					<option value="inactive">Inactive</option>
+				</select>
+
+				<button id="refreshCollegesBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					🔄 Refresh
+				</button>
+
+				<button id="downloadCollegesBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					📊 Download Excel
+				</button>
+
+				<button id="manageCollegesBtn" class="btn btn-primary" style="margin-bottom: 0;"
+					onclick="window.open('college-management.html', '_blank')">
+					⚙️ Manage Colleges
+				</button>
+			</div>
+
+			<div id="collegeStatsCards"
+				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #3b82f6;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Total
+						Colleges</div>
+					<div id="totalCollegesCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #10b981;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Active
+						Colleges</div>
+					<div id="activeCollegesCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #f59e0b;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Setup
+						Pending</div>
+					<div id="pendingCollegesCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #8b5cf6;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">Avg
+						Users/College</div>
+					<div id="avgUsersPerCollege" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+			</div>
+
+			<div id="collegeListContainer" style="min-height: 300px;">
+				<div style="text-align: center; padding: 3rem; color: #64748b;">
+					<div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+					<p>Loading colleges...</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- USER CATEGORIES -->
+		<section id="userlist" class="page section">
+			<h2>👥 User Categories</h2>
+
+
+			<div class="admin-controls">
+				<input id="userSearch" type="search" placeholder="Search users..."
+					style="max-width: 300px; margin-bottom: 0;">
+
+				<select id="userCollegeFilter" style="max-width: 200px; margin-bottom: 0;">
+					<option value="all">All Colleges</option>
+				</select>
+
+
+				<button id="refreshUsersBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					🔄 Refresh
+				</button>
+
+				<button id="downloadUsersBtn" class="btn btn-secondary" style="margin-bottom: 0;">
+					📊 Download Excel
+				</button>
+			</div>
+
+			<!-- User Statistics Cards -->
+			<div id="userStatsCards"
+				style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #3b82f6;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">👨‍🎓
+						Students</div>
+					<div id="totalStudentsCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #10b981;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">👨‍🏫
+						Staff</div>
+					<div id="totalStaffCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #f59e0b;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">👨‍💼
+						Admins</div>
+					<div id="totalAdminsUserCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #8b5cf6;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">✅
+						Approved</div>
+					<div id="approvedUsersCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #ef4444;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">⏳ Pending
+					</div>
+					<div id="pendingUsersCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+				<div
+					style="background: transparent; padding: 1.5rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border-left: 4px solid #06b6d4;">
+					<div style="font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 600;">🏫 Total
+						Users</div>
+					<div id="totalSystemUsersCount" style="font-size: 2rem; font-weight: 800; color: #1e293b;">0</div>
+				</div>
+			</div>
+
+			<!-- Category Tabs -->
+			<div class="tab-scroller"
+				style="margin-bottom: 24px; display: flex; gap: 12px; background: #f8fafc; padding: 6px; border-radius: 12px; border: 1px solid #e2e8f0; width: fit-content; flex-wrap: wrap;">
+				<button id="showAllUsers" class="sub-tab-btn active"
+					style="padding: 10px 20px; border-radius: 8px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s;">All
+					Users</button>
+				<button id="showStudentsList" class="sub-tab-btn"
+					style="padding: 10px 20px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; transition: all 0.2s;">Students</button>
+				<button id="showStaffList" class="sub-tab-btn"
+					style="padding: 10px 20px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; transition: all 0.2s;">Staff</button>
+				<button id="showAdminsList" class="sub-tab-btn"
+					style="padding: 10px 20px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; transition: all 0.2s;">Administrators</button>
+				<button id="showPendingUsers" class="sub-tab-btn"
+					style="padding: 10px 20px; border-radius: 8px; border: none; background: transparent; color: #64748b; cursor: pointer; font-weight: 600; transition: all 0.2s;">Pending
+					Approval</button>
+			</div>
+
+			<div id="userListContainer" style="min-height: 300px;">
+				<div style="text-align: center; padding: 3rem; color: #64748b;">
+					<div style="font-size: 2rem; margin-bottom: 1rem;">⏳</div>
+					<p>Loading users...</p>
+				</div>
+			</div>
+		</section>
+
+
+
+
+		<!-- DETAILS -->
+
+		<section id="detailsSection" class="page section">
+
+			<button type="button" onclick="goBack()"
+				style="margin-bottom: 24px; background: #f1f5f9; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; color: #64748b; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+				<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+					stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="19" y1="12" x2="5" y2="12"></line>
+					<polyline points="12 19 5 12 12 5"></polyline>
+				</svg>
+				Back to List
+			</button>
+
+			<h2 id="detailsTitle"></h2>
+
+			<div id="detailsInfo"></div>
+
+			<input id="detailsSearch" placeholder="Search" aria-label="Search details">
+
+			<table>
+
+				<thead id="detailsHead"></thead>
+
+				<tbody id="detailsBody"></tbody>
+
+			</table>
+
+		</section>
+
+
+		<!-- ATTENDANCE -->
+
+		<section id="attendance" class="page section">
+			<h2>📊 Attendance</h2>
+
+			<div class="controls-bar">
+				<input id="attendanceSearch" placeholder="🔍 Search name, roll..." aria-label="Search attendance" style="flex:1; min-width:180px;">
+				<select id="attendanceCollegeFilter" style="min-width:160px;">
+					<option value="all">All Colleges</option>
+				</select>
+				<input type="date" id="attendanceDateFilter" aria-label="Filter by Date" style="min-width:150px;">
+				<button id="downloadExcel" type="button" class="btn btn-secondary">📊 Download Excel</button>
+			</div>
+
+			<div class="table-wrap attendance-table-wrap">
+				<div class="attendance-scroll-container">
+					<table class="attendance-fixed-table">
+						<thead>
+							<tr>
+								<th id="attendanceSortIndex" data-sort-key="index" style="width:50px;">S.No</th>
+								<th id="attendanceSortCollege" data-sort-key="collegeName" style="min-width:200px;">College</th>
+								<th id="attendanceSortName" data-sort-key="name" style="min-width:120px;">Name</th>
+								<th id="attendanceSortDate" data-sort-key="date" style="width:100px;">Date</th>
+								<th id="attendanceSortRoll" data-sort-key="roll" style="min-width:120px;">Roll</th>
+								<th id="attendanceSortDepartment" data-sort-key="department" style="width:80px;">Dept</th>
+								<th id="attendanceSortYear" data-sort-key="year" style="width:50px;">Yr</th>
+								<th id="attendanceSortSession" data-sort-key="session" style="width:80px;">Session</th>
+								<th id="attendanceSortGps" data-sort-key="gps" style="width:60px;">GPS</th>
+								<th id="attendanceSortFace" data-sort-key="face" style="width:60px;">Face</th>
+								<th id="attendanceSortStatus" data-sort-key="status" style="width:90px;">Status</th>
+								<th id="attendanceSortPercentage" data-sort-key="percentageValue" style="width:90px;">Overall %</th>
+							</tr>
+						</thead>
+						<tbody id="attTable"></tbody>
+					</table>
+				</div>
+			</div>
+
+		</section>
+
+
+
+		<!-- PROFILE -->
+		<section id="profile" class="page section" style="background:transparent; border:none; box-shadow:none; padding:0;">
+
+			<div style="max-width:720px; margin:0 auto;">
+
+				<!-- Profile Card -->
+				<div style="background:rgba(255,255,255,0.5); backdrop-filter:blur(10px); border-radius:24px; overflow:hidden; box-shadow:0 4px 24px rgba(15,23,42,0.10); border:1px solid #e2e8f0;">
+
+					<!-- Cover -->
+					<div style="height:130px; background:linear-gradient(135deg,#6366f1 0%,#4f46e5 40%,#7c3aed 100%); position:relative;">
+						<!-- Edit button top-right -->
+						<button id="adminEditProfileBtn" title="Edit Profile" style="position:absolute; top:16px; right:16px; padding:8px 16px; border:1.5px solid rgba(255,255,255,0.4); background:rgba(255,255,255,0.15); color:#fff; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:6px; backdrop-filter:blur(8px);">
+							<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+							Edit Profile
+						</button>
+					</div>
+
+					<!-- Avatar (overlapping cover) -->
+					<div style="display:flex; flex-direction:column; align-items:center; margin-top:-52px; padding:0 28px 28px;">
+						<div style="position:relative; margin-bottom:14px;">
+							<img id="adminProfilePhoto"
+								src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTRhM2I4IiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTIwIDIxdi0yYTQgNCAwIDAgMC00LTRoLThhNCA0IDAgMCAwLTQgNHYyIi8+PGNpcmNsZSBjeD0iMTIiIGN5PSI3IiByPSI0Ii8+PC9zdmc+"
+								alt="Profile Photo"
+								style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:4px solid #fff; box-shadow:0 4px 16px rgba(99,102,241,0.25);" />
+							<button id="adminPhotoBtn" title="Update Photo" style="position:absolute; bottom:2px; right:2px; width:30px; height:30px; border-radius:50%; border:2px solid #fff; background:#6366f1; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:14px; box-shadow:0 2px 8px rgba(99,102,241,0.4);">📷</button>
+						</div>
+
+						<!-- Name & Role -->
+						<h2 id="adminProfileName" style="margin:0 0 6px; font-size:22px; font-weight:800; color:#0f172a; letter-spacing:-0.02em; text-align:center;">Admin Name</h2>
+						<div id="adminProfileRole" style="display:inline-flex; align-items:center; gap:6px; padding:4px 14px; background:#ede9fe; color:#6d28d9; border-radius:999px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px;">⚡ Super Admin</div>
+						<div id="adminProfileEmail" style="font-size:13px; color:#64748b; font-weight:500; margin-bottom:20px;">--</div>
+
+						<!-- Divider -->
+						<div style="width:100%; height:1px; background:#f1f5f9; margin-bottom:20px;"></div>
+
+						<!-- Info rows -->
+						<div style="width:100%; display:flex; flex-direction:column; gap:12px;">
+
+							<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#f8fafc; border-radius:12px; border:1px solid #f1f5f9;">
+								<span style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em;">📞 Phone</span>
+								<span id="adminProfilePhone" style="font-size:14px; font-weight:700; color:#0f172a;">--</span>
+							</div>
+
+							<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#f8fafc; border-radius:12px; border:1px solid #f1f5f9;">
+								<span style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em;">🏢 Department</span>
+								<span id="adminProfileDept" style="font-size:14px; font-weight:700; color:#0f172a;">--</span>
+							</div>
+
+							<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#f8fafc; border-radius:12px; border:1px solid #f1f5f9;">
+								<span style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em;">🎭 Role</span>
+								<span id="adminProfileRoleText" style="font-size:14px; font-weight:700; color:#0f172a;">--</span>
+							</div>
+
+							<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:#f8fafc; border-radius:12px; border:1px solid #f1f5f9;">
+								<span style="font-size:12px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:0.06em;">📅 Registered On</span>
+								<span id="adminProfileRegisteredOn" style="font-size:14px; font-weight:700; color:#0f172a;">--</span>
+							</div>
+
+							<div style="display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:linear-gradient(135deg,#ede9fe,#ddd6fe); border-radius:12px; border:1px solid #c4b5fd;">
+								<span style="font-size:12px; font-weight:700; color:#6d28d9; text-transform:uppercase; letter-spacing:0.06em;">🛡️ Access Level</span>
+								<span style="font-size:13px; font-weight:800; color:#4c1d95;">Full System Access</span>
+							</div>
+
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</section>
+
+		<!-- PROFILE EDIT MODAL -->
+		<div id="adminProfileModal" class="request-modal-overlay hidden">
+			<div class="request-modal-content" style="max-width: 500px;">
+				<h3 style="margin-top: 0; color: #1e293b; display: flex; align-items: center; gap: 8px;">
+					✏️ Update Profile
+				</h3>
+				<p style="color: #64748b; font-size: 14px; margin-bottom: 20px;">
+					Update your profile information. Changes are applied immediately without approval.
+				</p>
+
+				<div id="adminPhotoUpdateArea" class="hidden" style="margin-bottom: 20px;">
+					<div style="border: 2px dashed #e2e8f0; padding: 20px; border-radius: 12px; text-align: center;">
+						<input type="file" id="adminPhotoInput" accept="image/*" class="hidden">
+						<label for="adminPhotoInput" style="cursor: pointer; color: #3b82f6; font-weight: 600;">
+							📷 Click to upload new photo
+						</label>
+						<div id="adminPhotoPreview" style="margin-top: 10px; font-size: 12px; color: #64748b;">
+							No file selected
+						</div>
+					</div>
+				</div>
+
+				<div id="adminDetailsUpdateArea" class="hidden">
+					<div style="margin-bottom: 15px;">
+						<label class="profile-info-label-v2">Phone Number</label>
+						<input type="text" id="adminPhoneInput"
+							style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;"
+							placeholder="Phone Number">
+					</div>
+					<div style="margin-bottom: 15px;">
+						<label class="profile-info-label-v2">Department</label>
+						<input type="text" id="adminDeptInput"
+							style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;"
+							placeholder="Department">
+					</div>
+				</div>
+
+				<div style="display: flex; gap: 12px; margin-top: 20px;">
+					<button id="adminCancelModal"
+						style="flex: 1; padding: 12px; border: none; background: #f1f5f9; color: #64748b; border-radius: 10px; font-weight: 600; cursor: pointer;">
+						Cancel
+					</button>
+					<button id="adminSaveProfileBtn"
+						style="flex: 1; padding: 12px; border: none; background: #3b82f6; color: white; border-radius: 10px; font-weight: 600; cursor: pointer;">
+						Save Changes
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<!-- TIMING -->
+		<section id="timing" class="page section">
+			<div class="greeting-container">
+				<h2>Attendance Timing Configuration</h2>
+			</div>
+
+			<div class="status-box" style="margin-top: 20px;">
+				<div class="status-title">Configure Session Windows</div>
+				<p class="status-message">Set the start and end times for Forenoon (FN) and Afternoon (AN) sessions.
+					Students can only mark attendance during these active windows.</p>
+
+				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
+					<!-- FN TIMING -->
+					<div class="admin-setting-item" style="padding: 24px;">
+						<div class="admin-settings-title" style="color: #1e3a8a;">🌅 Forenoon (FN)</div>
+						<div style="margin-top: 16px;">
+							<label class="admin-setting-label">Start Time</label>
+							<input type="time" id="fnStart"
+								style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px; font-family: inherit;">
+						</div>
+						<div style="margin-top: 16px;">
+							<label class="admin-setting-label">End Time</label>
+							<input type="time" id="fnEnd"
+								style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px; font-family: inherit;">
+						</div>
+					</div>
+
+					<!-- AN TIMING -->
+					<div class="admin-setting-item" style="padding: 24px;">
+						<div class="admin-settings-title" style="color: #1e3a8a;">🌤️ Afternoon (AN)</div>
+						<div style="margin-top: 16px;">
+							<label class="admin-setting-label">Start Time</label>
+							<input type="time" id="anStart"
+								style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px; font-family: inherit;">
+						</div>
+						<div style="margin-top: 16px;">
+							<label class="admin-setting-label">End Time</label>
+							<input type="time" id="anEnd"
+								style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px; font-family: inherit;">
+						</div>
+					</div>
+				</div>
+
+				<button id="saveTiming" class="logout-btn"
+					style="margin-top: 24px; background: #2563eb; color: white; border: none; width: auto; padding: 12px 32px; font-size: 15px;">💾
+					Save Timing Settings</button>
+			</div>
+		</section>
+
+		<!-- GPS -->
+		<section id="gps" class="page section">
+			<div class="greeting-container">
+				<h2>GPS Boundary Settings</h2>
+			</div>
+
+			<div class="status-box" style="margin-top: 20px; max-width: 600px;">
+				<div class="status-title">Geofencing Configuration</div>
+				<p class="status-message">Set the center coordinates and radius for the college attendance zone.
+					Students must be within this area to mark their presence.</p>
+
+				<div class="admin-setting-item" style="margin-bottom: 20px;">
+					<label class="admin-setting-label">Center Latitude</label>
+					<input id="lat" placeholder="e.g. 17.3850"
+						style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px;">
+				</div>
+
+				<div class="admin-setting-item" style="margin-bottom: 20px;">
+					<label class="admin-setting-label">Center Longitude</label>
+					<input id="lng" placeholder="e.g. 78.4867"
+						style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px;">
+				</div>
+
+				<div class="admin-setting-item" style="margin-bottom: 24px;">
+					<label class="admin-setting-label">Radius (Meters)</label>
+					<input id="radius" placeholder="e.g. 200"
+						style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 4px;">
+				</div>
+
+				<button id="saveGPS" class="logout-btn"
+					style="background: #2563eb; color: white; border: none; width: auto; padding: 12px 32px; font-size: 15px;">💾
+					Save GPS Settings</button>
+			</div>
+		</section>
+
+
+		<!-- SECURITY & PERMISSIONS -->
+		<section id="security" class="page section">
+			<div class="greeting-container">
+				<h2>Security & Permissions</h2>
+			</div>
+
+			<div class="status-box" style="margin-top: 20px; max-width: 600px;">
+				<div class="status-title">Staff Authorities</div>
+				<p class="status-message">Configure high-level permissions for HODs and Staff members.</p>
+
+				<div class="admin-setting-item"
+					style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px;">
+					<div>
+						<div class="admin-setting-label" style="margin-bottom: 4px;">HOD Profile Approval</div>
+						<p style="font-size: 12px; color: #64748b; margin: 0;">Allow HODs to approve student
+							profile/photo update requests (GPS required).</p>
+					</div>
+					<label class="switch" style="position: relative; display: inline-block; width: 48px; height: 24px;">
+						<input type="checkbox" id="hodProfileApprovalToggle" style="opacity: 0; width: 0; height: 0;">
+						<span class="slider round"
+							style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px;"></span>
+					</label>
+				</div>
+
+				<button id="saveSecuritySettings" class="logout-btn"
+					style="background: #2563eb; color: white; border: none; width: auto; padding: 12px 32px; font-size: 15px;">💾
+					Save Security Settings</button>
+			</div>
+		</section>
+
+		<!-- EMAIL REMINDER MANAGEMENT -->
+		<section id="emailreminders" class="page section">
+			<div class="greeting-container">
+				<h2>📧 Email Reminder Management</h2>
+				<p style="color: #64748b; margin-top: 8px;">Automated email notification system for student attendance
+				</p>
+			</div>
+
+			<!-- Main Dashboard Grid -->
+			<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
+
+				<!-- Left Column: Control Panel -->
+				<div style="display: flex; flex-direction: column; gap: 24px;">
+
+					<!-- Quick Toggle Card -->
+					<div
+						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 28px; border-radius: 16px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); position: relative; overflow: hidden;">
+						<div
+							style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border-radius: 50%;">
+						</div>
+						<div
+							style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; background: rgba(255, 255, 255, 0.05); border-radius: 50%;">
+						</div>
+
+						<div style="position: relative; z-index: 1;">
+							<div
+								style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+								<div>
+									<h3 style="margin: 0; color: white; font-size: 20px; font-weight: 600;">System
+										Status</h3>
+									<p style="margin: 4px 0 0 0; color: rgba(255, 255, 255, 0.8); font-size: 13px;">
+										Control email reminder automation</p>
+								</div>
+								<div
+									style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; backdrop-filter: blur(10px);">
+									⚡
+								</div>
+							</div>
+
+							<div
+								style="display: flex; align-items: center; gap: 16px; background: rgba(255, 255, 255, 0.15); padding: 16px; border-radius: 12px; backdrop-filter: blur(10px);">
+								<label style="display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1;">
+									<div
+										style="position: relative; width: 56px; height: 32px; background: rgba(255, 255, 255, 0.3); border-radius: 16px; transition: all 0.3s;">
+										<input type="checkbox" id="emailRemindersToggle" checked
+											style="opacity: 0; width: 0; height: 0;">
+										<div
+											style="position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; background: white; border-radius: 50%; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
+										</div>
+									</div>
+									<div>
+										<span
+											style="color: white; font-weight: 600; font-size: 15px; display: block;">Email
+											Reminders</span>
+										<span style="color: rgba(255, 255, 255, 0.7); font-size: 12px;"
+											id="toggleStatus">Active</span>
+									</div>
+								</label>
+								<div
+									style="width: 12px; height: 12px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3); animation: pulse 2s infinite;">
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Configuration Card -->
+					<div
+						style="background: transparent; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+						<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+							<div
+								style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
+								⚙️
+							</div>
+							<div>
+								<h3 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 600;">Configuration
+								</h3>
+								<p style="margin: 2px 0 0 0; color: #64748b; font-size: 13px;">Customize reminder
+									settings</p>
+							</div>
+						</div>
+
+						<div style="display: grid; gap: 20px;">
+							<!-- Reminder Time -->
+							<div
+								style="padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; border: 2px solid #e2e8f0;">
+								<label
+									style="display: block; margin-bottom: 12px; color: #334155; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+									<span style="font-size: 18px;">⏰</span>
+									Reminder Timing
+								</label>
+								<div style="display: flex; align-items: center; gap: 12px;">
+									<input type="number" id="emailReminderMinutes" value="10" min="5" max="60"
+										style="flex: 1; padding: 12px 16px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #1e293b; transition: all 0.3s;">
+									<span
+										style="color: #64748b; font-size: 14px; font-weight: 500; white-space: nowrap;">minutes
+										before</span>
+								</div>
+								<p style="margin: 10px 0 0 0; color: #64748b; font-size: 12px; line-height: 1.5;">
+									⏱️ Reminders will be sent this many minutes before each session ends
+								</p>
+							</div>
+
+							<!-- Session Times Info -->
+							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+								<div
+									style="padding: 16px; background: #eff6ff; border-radius: 10px; border-left: 4px solid #3b82f6;">
+									<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">FN Session Ends
+									</div>
+									<div style="font-size: 18px; font-weight: 700; color: #1e40af;" id="fnReminderTime">
+										--:--</div>
+									<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Reminder time</div>
+								</div>
+								<div
+									style="padding: 16px; background: #fef3c7; border-radius: 10px; border-left: 4px solid #f59e0b;">
+									<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">AN Session Ends
+									</div>
+									<div style="font-size: 18px; font-weight: 700; color: #d97706;" id="anReminderTime">
+										--:--</div>
+									<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Reminder time</div>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Action Buttons -->
+					<div
+						style="background: transparent; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+						<h3
+							style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+							<span style="font-size: 20px;">🚀</span>
+							Quick Actions
+						</h3>
+
+						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+							<button id="saveEmailSettings"
+								style="padding: 14px 20px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+								<span style="font-size: 16px;">💾</span>
+								Save Settings
+							</button>
+							<button id="testEmailReminderBtn"
+								style="padding: 14px 20px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+								<span style="font-size: 16px;">📤</span>
+								Test Email
+							</button>
+							<button id="bulkTestEmailBtn"
+								style="padding: 14px 20px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+								<span style="font-size: 16px;">📧</span>
+								Test All
+							</button>
+							<button id="bulkReminderBtn"
+								style="padding: 14px 20px; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+								<span style="font-size: 16px;">🚨</span>
+								Bulk Send
+							</button>
+						</div>
+					</div>
+				</div>
+
+				<!-- Right Column: Statistics & Info -->
+				<div style="display: flex; flex-direction: column; gap: 24px;">
+
+					<!-- Statistics Card -->
+					<div
+						style="background: transparent; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
+						<h3
+							style="margin: 0 0 20px 0; color: #1e293b; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+							<span style="font-size: 20px;">📊</span>
+							Statistics
+						</h3>
+
+						<div style="display: flex; flex-direction: column; gap: 16px;">
+							<div
+								style="padding: 20px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; border-left: 4px solid #3b82f6; position: relative; overflow: hidden;">
+								<div
+									style="position: absolute; top: -10px; right: -10px; width: 60px; height: 60px; background: rgba(59, 130, 246, 0.1); border-radius: 50%;">
+								</div>
+								<div
+									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+									Total Sent</div>
+								<div style="font-size: 32px; font-weight: 800; color: #1e40af; position: relative; z-index: 1;"
+									id="totalEmailsSent">0</div>
+								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">📨 All time emails</div>
+							</div>
+
+							<div
+								style="padding: 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border-left: 4px solid #10b981; position: relative; overflow: hidden;">
+								<div
+									style="position: absolute; top: -10px; right: -10px; width: 60px; height: 60px; background: rgba(16, 185, 129, 0.1); border-radius: 50%;">
+								</div>
+								<div
+									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+									Today</div>
+								<div style="font-size: 32px; font-weight: 800; color: #059669; position: relative; z-index: 1;"
+									id="todayEmailsSent">0</div>
+								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">✅ Sent today</div>
+							</div>
+
+							<div
+								style="padding: 20px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 12px; border-left: 4px solid #f59e0b;">
+								<div
+									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+									Status</div>
+								<div style="font-size: 16px; font-weight: 700; color: #d97706;" id="emailConfigStatus">
+									Ready</div>
+								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">🟢 System operational
+								</div>
+							</div>
+
+							<div
+								style="padding: 20px; background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 12px; border-left: 4px solid #8b5cf6;">
+								<div
+									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+									Last Sent</div>
+								<div style="font-size: 13px; font-weight: 700; color: #7c3aed; line-height: 1.4;"
+									id="lastEmailSent">No emails sent</div>
+								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">🕐 Recent activity</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- System Info -->
+					<div
+						style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 24px; border-radius: 16px; border: 2px solid #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);">
+						<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+							<div
+								style="width: 40px; height: 40px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+								ℹ️
+							</div>
+							<h4 style="margin: 0; color: #065f46; font-size: 16px; font-weight: 700;">System Information
+							</h4>
+						</div>
+						<div style="color: #065f46; font-size: 13px; line-height: 1.8;">
+							<div
+								style="display: flex; gap: 8px; margin-bottom: 12px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
+								<span style="font-size: 16px;">📅</span>
+								<div>
+									<strong style="display: block; margin-bottom: 2px;">Automatic Schedule</strong>
+									<span style="opacity: 0.9;" id="scheduleInfo">Loading timing configuration...</span>
+								</div>
+							</div>
+							<div
+								style="display: flex; gap: 8px; margin-bottom: 12px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
+								<span style="font-size: 16px;">👥</span>
+								<div>
+									<strong style="display: block; margin-bottom: 2px;">Target Recipients</strong>
+									<span style="opacity: 0.9;">Students without attendance for current session</span>
+								</div>
+							</div>
+							<div
+								style="display: flex; gap: 8px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
+								<span style="font-size: 16px;">✉️</span>
+								<div>
+									<strong style="display: block; margin-bottom: 2px;">Email Content</strong>
+									<span style="opacity: 0.9;">Personalized with name, session & attendance link</span>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<style>
+				@keyframes pulse {
+
+					0%,
+					100% {
+						opacity: 1;
+					}
+
+					50% {
+						opacity: 0.5;
+					}
+				}
+
+				#emailRemindersToggle:checked+div {
+					background: #10b981 !important;
+					transform: translateX(24px);
+				}
+
+				#emailReminderMinutes:focus {
+					border-color: #667eea;
+					outline: none;
+					box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+				}
+
+				button:hover {
+					transform: translateY(-2px);
+					box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+				}
+
+				button:active {
+					transform: translateY(0);
+				}
+
+				@media (max-width: 1024px) {
+					div[style*="grid-template-columns: 2fr 1fr"] {
+						grid-template-columns: 1fr !important;
+					}
+				}
+			</style>
+		</section>
+
+		<!-- HOLIDAY -->
+
+		<section id="holiday" class="page section">
+
+			<h2>Holiday</h2>
+
+			<label for="holidayMode">Mode:</label>
+			<select id="holidayMode">
+				<option value="single">Single Day</option>
+				<option value="multiple">Multiple Days</option>
+			</select>
+
+			<div id="singleHoliday">
+				<label for="holidayDate">Date:</label>
+				<input type="date" id="holidayDate">
+			</div>
+
+			<div id="rangeHoliday" class="hidden">
+				<label for="holidayStart">From:</label>
+				<input type="date" id="holidayStart">
+				<label for="holidayEnd">To:</label>
+				<input type="date" id="holidayEnd">
+			</div>
+
+			<input id="holidayReason" placeholder="Reason" aria-label="Holiday reason">
+
+			<button id="addHoliday" type="button">Add</button>
+
+		</section>
+
+
+		<!-- INVITE ADMIN / PRINCIPAL -->
+		<section id="invite" class="page section">
+			<style>
+				.access-management-container {
+					display: flex;
+					flex-direction: column;
+					gap: 32px;
+					max-width: 1000px;
+					margin: 0 auto;
+					padding-top: 20px;
+				}
+
+				.provisioning-card {
+					background: #ffffff;
+					border-radius: 12px;
+					padding: 32px;
+					box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+					border: 1px solid #f1f5f9;
+				}
+
+				.provisioning-card h3 {
+					font-size: 18px;
+					color: #1e293b;
+					margin-bottom: 8px;
+					font-weight: 700;
+				}
+
+				.provisioning-card p {
+					color: #64748b;
+					font-size: 14px;
+					margin-bottom: 24px;
+				}
+
+				.invite-input-group {
+					display: grid;
+					grid-template-columns: 2fr 1fr auto;
+					gap: 16px;
+					align-items: flex-end;
+				}
+
+				@media (max-width: 768px) {
+					.invite-input-group {
+						grid-template-columns: 1fr;
+					}
+				}
+
+				.invite-field {
+					display: flex;
+					flex-direction: column;
+					gap: 6px;
+				}
+
+				.invite-field label {
+					font-size: 13px;
+					font-weight: 600;
+					color: #475569;
+				}
+
+				.invite-field input,
+				.invite-field select {
+					padding: 12px;
+					border: 1px solid #e2e8f0;
+					border-radius: 8px;
+					font-size: 15px;
+					transition: border-color 0.2s, box-shadow 0.2s;
+					margin: 0;
+					width: 100%;
+				}
+
+				.invite-field input:focus,
+				.invite-field select:focus {
+					outline: none;
+					border-color: #3b82f6;
+					box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+				}
+
+				.audit-log-card {
+					background: #ffffff;
+					border-radius: 12px;
+					padding: 24px;
+					border: 1px solid #f1f5f9;
+					box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+				}
+
+				.audit-log-card h3 {
+					font-size: 16px;
+					color: #1e293b;
+					margin-bottom: 16px;
+					font-weight: 700;
+				}
+
+				.invite-table {
+					width: 100%;
+					border-collapse: separate;
+					border-spacing: 0;
+					font-size: 14px;
+				}
+
+				.invite-table th {
+					background: #f8fafc;
+					color: #64748b;
+					font-weight: 600;
+					text-transform: uppercase;
+					letter-spacing: 0.025em;
+					font-size: 11px;
+					padding: 12px 16px;
+					text-align: left;
+					border-bottom: 2px solid #f1f5f9;
+				}
+
+				.invite-table td {
+					padding: 16px;
+					border-bottom: 1px solid #f1f5f9;
+					color: #334155;
+					text-align: left;
+				}
+
+				.status-badge {
+					padding: 4px 10px;
+					border-radius: 99px;
+					font-size: 11px;
+					font-weight: 700;
+					text-transform: uppercase;
+				}
+
+				.status-pending {
+					background: #fff7ed;
+					color: #9a3412;
+				}
+
+				.status-expired {
+					background: #fef2f2;
+					color: #991b1b;
+				}
+
+				.status-registered {
+					background: #f0fdf4;
+					color: #166534;
+				}
+
+				.revoke-btn {
+					background: #ffffff;
+					color: #ef4444;
+					border: 1px solid #fee2e2;
+					padding: 6px 12px;
+					border-radius: 6px;
+					font-weight: 600;
+					font-size: 12px;
+					transition: all 0.2s;
+				}
+
+				.revoke-btn:hover {
+					background: #fef2f2;
+					border-color: #fecaca;
+				}
+
+				.audit_log_header {
+					display: flex;
+					justify-content: space-between;
+					align-items: center;
+					margin-bottom: 16px;
+				}
+
+				.refresh-btn {
+					background: #f1f5f9;
+					color: #475569;
+					border: 1px solid #e2e8f0;
+					padding: 6px 12px;
+					border-radius: 6px;
+					font-size: 14px;
+					cursor: pointer;
+					display: flex;
+					align-items: center;
+					gap: 6px;
+					transition: all 0.2s;
+				}
+
+				.refresh-btn:hover {
+					background: #e2e8f0;
+					color: #1e293b;
+				}
+
+				@keyframes spin {
+					from {
+						transform: rotate(0deg);
+					}
+
+					to {
+						transform: rotate(360deg);
+					}
+				}
+			</style>
+
+			<div class="greeting-container">
+				<h2>System Access & Invitations</h2>
+			</div>
+
+			<div class="access-management-container">
+				<!-- Provisioning Form -->
+				<div class="provisioning-card">
+					<h3>Provision New Administrator</h3>
+					<p>Generate and securely issue registration credentials for senior staff members.</p>
+
+					<form id="inviteForm">
+						<div class="invite-input-group">
+							<div class="invite-field">
+								<label for="inviteEmail">Email Address</label>
+								<input type="email" id="inviteEmail" required placeholder="admin@example.com">
+							</div>
+
+							<div class="invite-field">
+								<label for="inviteRole">Assigned Role</label>
+								<select id="inviteRole" required>
+									<option value="" disabled selected>Select Role</option>
+									<option value="student">Student</option>
+									<option value="incharge">In-charge</option>
+									<option value="hod">HOD</option>
+									<option value="admin">Admin</option>
+									<option value="principal">Principal</option>
+									<option value="superadmin"
+										style="background: #fef3c7; color: #92400e; font-weight: 600;">🔑 Super Admin
+										(System-wide)</option>
+								</select>
+								<small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
+									Super Admin can manage multiple colleges and system settings
+								</small>
+							</div>
+
+							<div class="invite-field" id="inviteCollegeField">
+								<label for="inviteCollege">College</label>
+								<select id="inviteCollege" required>
+									<option value="" disabled selected>Select College</option>
+								</select>
+								<small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
+									The college this user will be assigned to
+								</small>
+							</div>
+
+							<button type="submit" id="sendInviteBtn" class="logout-btn"
+								style="margin: 0; padding: 0 32px; height: 45px; background: #2563eb; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
+								<span class="btn-text">Issue Invite</span>
+								<span class="spinner hidden"
+									style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+							</button>
+						</div>
+					</form>
+
+					<!-- Quick Super Admin Creation (No Email Required) -->
+					<div
+						style="margin-top: 2rem; padding: 1.5rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 12px;">
+						<h4 style="margin: 0 0 1rem 0; color: #92400e; display: flex; align-items: center; gap: 8px;">
+							🔑 Quick Super Admin Setup
+						</h4>
+						<p style="margin: 0 0 1rem 0; color: #78350f; font-size: 14px;">
+							Create a super admin invite token without email setup (for initial system setup)
+						</p>
+						<div style="display: flex; gap: 1rem; align-items: end;">
+							<div style="flex: 1;">
+								<label for="quickSuperAdminEmail"
+									style="display: block; margin-bottom: 4px; color: #78350f; font-weight: 600; font-size: 14px;">Email
+									Address</label>
+								<input type="email" id="quickSuperAdminEmail" placeholder="superadmin@example.com"
+									style="width: 100%; padding: 8px 12px; border: 1px solid #fbbf24; border-radius: 6px; background: white;">
+							</div>
+							<button id="createQuickSuperAdmin"
+								style="padding: 8px 16px; background: #d97706; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap;">
+								Create Token
+							</button>
+						</div>
+						<div id="quickSuperAdminResult"
+							style="margin-top: 1rem; padding: 1rem; background: white; border-radius: 6px; display: none;">
+							<strong style="color: #059669;">Registration Link Created:</strong>
+							<div id="quickSuperAdminLink"
+								style="word-break: break-all; font-family: monospace; font-size: 12px; margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 4px;">
+							</div>
+							<button onclick="copyQuickSuperAdminLink()"
+								style="padding: 4px 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+								Copy Link
+							</button>
+						</div>
+					</div>
+
+					<div id="inviteMessage" class="message hidden"
+						style="margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 14px; text-align: center; border: 1px solid transparent;">
+					</div>
+				</div>
+
+				<!-- Audit Log -->
+				<div class="audit-log-card">
+					<div class="audit_log_header">
+						<h3 style="margin: 0;">Invitation Audit Log</h3>
+						<div style="display: flex; gap: 8px;">
+							<button id="clearAllInvitesBtn" class="refresh-btn" type="button"
+								title="Clear All Completed Logs"
+								style="background: #3b82f6; color: white; border: none;">
+								<span>🗑️</span> Clear All
+							</button>
+							<button id="refreshInvitesBtn" class="refresh-btn" type="button" title="Refresh Log"
+								style="background: #3b82f6; color: white; border: none;">
+								<span>🔄</span> Refresh
+							</button>
+						</div>
+					</div>
+					<div class="table-responsive" style="margin: 0; overflow: visible;">
+						<table class="invite-table">
+							<thead>
+								<tr>
+									<th>Recipient</th>
+									<th>Role</th>
+									<th>Issued On</th>
+									<th>Status / TTL</th>
+									<th>Action</th>
+								</tr>
+							</thead>
+							<tbody id="invitesTableBody">
+								<tr>
+									<td colspan="5" style="text-align:center; padding: 40px; color: #94a3b8;">Loading
+										audit records...</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</section>
+
+
+
+		<!-- DAYS COUNT MANAGEMENT -->
+		<section id="dayscount" class="page section">
+
+			<h2>Academic Year & Statistics</h2>
+
+			<!-- Academic Year Settings -->
+			<div
+				style="background: transparent; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 32px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+				<h3
+					style="margin: 0 0 20px 0; font-size: 16px; color: #0f172a; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">
+					Academic Year Period</h3>
+
+				<div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end; margin-bottom: 20px;">
+					<div>
+						<label for="academicYearCollegeSelect"
+							style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">College</label>
+						<select id="academicYearCollegeSelect"
+							style="width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; background: white; color: #0f172a;">
+							<option value="">Select a college</option>
+						</select>
+					</div>
+					<div>
+						<button id="refreshAcademicYearCollegeList" type="button" style="background: #0f766e;">Refresh List</button>
+					</div>
+				</div>
+
+				<div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end;">
+					<div>
+						<label for="academicStartDate"
+							style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">Start
+							Date</label>
+						<input type="date" id="academicStartDate">
+					</div>
+					<div>
+						<label for="academicEndDate"
+							style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">End
+							Date</label>
+						<input type="date" id="academicEndDate">
+					</div>
+					<div style="display: flex; gap: 8px;">
+						<button id="saveAcademicYear" type="button">Save</button>
+						<button id="loadCurrentAcademicYear" type="button" style="background: #6b7280;">Load</button>
+					</div>
+				</div>
+			</div>
+
+			<div
+				style="background: transparent; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 32px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+				<h3
+					style="margin: 0 0 16px 0; font-size: 16px; color: #0f172a; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">
+					College Academic Year List</h3>
+				<div class="table-responsive">
+					<table>
+						<thead>
+							<tr>
+								<th>S.No</th>
+								<th>College</th>
+								<th>Academic Year Start</th>
+								<th>Academic Year End</th>
+								<th>Updated</th>
+							</tr>
+						</thead>
+						<tbody id="academicYearCollegeListBody">
+							<tr>
+								<td colspan="5" style="text-align:center; color:#94a3b8; padding: 24px;">Loading college academic years...</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+			<!-- Statistics Viewer -->
+			<div
+				style="background: transparent; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+				<h3
+					style="margin: 0 0 20px 0; font-size: 16px; color: #0f172a; font-weight: 700; border-bottom: 2px solid #f1f5f9; padding-bottom: 12px;">
+					Attendance Statistics</h3>
+
+				<div
+					style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 16px; align-items: end; margin-bottom: 24px;">
+					<div>
+						<label for="statsStartDate"
+							style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">From
+							Date</label>
+						<input type="date" id="statsStartDate">
+					</div>
+					<div>
+						<label for="statsEndDate"
+							style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155; font-size: 14px;">To
+							Date</label>
+						<input type="date" id="statsEndDate">
+					</div>
+					<div>
+						<button id="loadDaysCount" type="button">Load Statistics</button>
+					</div>
+				</div>
+
+				<div class="table-responsive">
+					<table>
+						<thead>
+							<tr>
+								<th>S.No</th>
+								<th>Date</th>
+								<th>FN Present</th>
+								<th>FN Absent</th>
+								<th>AN Present</th>
+								<th>AN Absent</th>
+								<th>Total Present</th>
+								<th>Percentage</th>
+							</tr>
+						</thead>
+						<tbody id="daysCountTable">
+							<tr>
+								<td colspan="8" style="text-align:center; padding: 40px; color: #94a3b8;">Select date
+									range and click "Load Statistics"</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+
+		</section>
+
+		<!-- BACKGROUND AUDIT -->
+		<section id="bgaudit" class="page section">
+			<div class="section-header">
+				<h2>🖼️ Background Audit</h2>
+				<button id="refreshBgAudit" class="btn btn-secondary">🔄 Refresh</button>
+			</div>
+			<p style="color:#64748b; margin-bottom:20px; font-size:14px;">Overview of background images set for each college dashboard.</p>
+
+			<div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+				<div id="bgAuditStatSet" style="background:#dcfce7; color:#166534; padding:10px 20px; border-radius:10px; font-weight:700; font-size:14px;">✅ Set: <span id="bgAuditSetCount">—</span></div>
+				<div id="bgAuditStatNone" style="background:#fef3c7; color:#92400e; padding:10px 20px; border-radius:10px; font-weight:700; font-size:14px;">⚠️ Not Set: <span id="bgAuditNoneCount">—</span></div>
+			</div>
+
+			<div id="bgAuditGrid" class="bg-audit-grid">
+				<div style="text-align:center; padding:40px; color:#94a3b8; grid-column:1/-1;">
+					<div style="font-size:2rem; margin-bottom:8px;">⏳</div>
+					<p>Loading colleges...</p>
+				</div>
+			</div>
+		</section>
+
+		<!-- PLATFORM BACKGROUND -->
+		<section id="platformbg" class="page section">
+			<h2>🖼️ Platform Background</h2>
+			<p style="margin-bottom:24px; opacity:0.7;">Set a background image or video shown on the Login and Registration pages for all users.</p>
+
+			<!-- Preview -->
+			<div id="pbPreviewWrap" style="width:100%; max-width:640px; height:220px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:24px; display:flex; align-items:center; justify-content:center; position:relative; background:#0f172a;">
+				<img id="pbPreviewImg" src="" alt="" style="width:100%; height:100%; object-fit:cover; display:none;" />
+				<video id="pbPreviewVideo" src="" autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
+				<span id="pbPreviewEmpty" style="color:#94a3b8; font-size:14px;">No background set</span>
+			</div>
+
+			<!-- Tabs -->
+			<div style="display:flex; gap:8px; margin-bottom:20px;">
+				<button id="pbTabUrl" type="button" style="padding:8px 18px; border-radius:8px; border:none; font-weight:700; cursor:pointer; background:#3b82f6; color:#fff;">🔗 URL</button>
+				<button id="pbTabFile" type="button" style="padding:8px 18px; border-radius:8px; border:none; font-weight:700; cursor:pointer; background:transparent; color:#64748b; border:1px solid #cbd5e1;">📁 Upload</button>
+			</div>
+
+			<!-- URL input -->
+			<div id="pbPanelUrl">
+				<div style="display:flex; gap:8px; margin-bottom:12px;">
+					<input id="pbUrlInput" type="url" placeholder="https://example.com/background.jpg or .mp4"
+						style="flex:1; padding:12px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; box-sizing:border-box;" />
+					<button id="pbPreviewBtn" type="button" style="padding:12px 18px; border-radius:10px; border:1.5px solid #3b82f6; background:transparent; color:#3b82f6; font-weight:700; cursor:pointer; white-space:nowrap;">👁️ Preview</button>
+				</div>
+			</div>
+
+			<!-- File upload -->
+			<div id="pbPanelFile" style="display:none;">
+				<label for="pbFileInput" style="display:flex; flex-direction:column; align-items:center; gap:8px; padding:28px; border:2px dashed #cbd5e1; border-radius:12px; cursor:pointer; margin-bottom:12px;">
+					<span style="font-size:28px;">🖼️</span>
+					<span style="font-size:14px; font-weight:600;">Click to choose image or video</span>
+					<span style="font-size:12px; color:#94a3b8;">JPG, PNG, GIF, MP4, WEBM</span>
+				</label>
+				<input type="file" id="pbFileInput" accept="image/*,video/*" style="display:none;" />
+			</div>
+
+			<div style="display:flex; gap:12px; flex-wrap:wrap;">
+				<button id="pbSaveBtn" type="button" style="padding:12px 28px; border-radius:10px; border:none; background:#3b82f6; color:#fff; font-weight:700; cursor:pointer;">💾 Save Background</button>
+				<button id="pbRemoveBtn" type="button" style="padding:12px 22px; border-radius:10px; border:1.5px solid #fecaca; background:transparent; color:#dc2626; font-weight:700; cursor:pointer;">🗑️ Remove</button>
+			</div>
+			<p id="pbStatus" style="margin-top:12px; font-size:14px; font-weight:600;"></p>
+		</section>
+
+		<!-- SUPER ADMIN DASHBOARD BACKGROUND -->
+		<section id="superadminbg" class="page section">
+			<h2>🎨 My Dashboard Background</h2>
+			<p style="margin-bottom:24px; opacity:0.7;">Set a personal background image for your super admin dashboard.</p>
+
+			<div id="saBgPreviewWrap" style="width:100%; max-width:640px; height:220px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:24px; display:flex; align-items:center; justify-content:center; position:relative; background:#0f172a;">
+				<img id="saBgPreviewImg" src="" alt="" style="width:100%; height:100%; object-fit:cover; display:none;" />
+				<span id="saBgPreviewEmpty" style="color:#94a3b8; font-size:14px;">No background set</span>
+			</div>
+
+			<div style="margin-bottom:12px;">
+				<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Background Image URL</label>
+				<div style="display:flex; gap:8px;">
+					<input id="saBgUrlInput" type="url" placeholder="https://example.com/background.jpg"
+						style="flex:1; padding:12px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; box-sizing:border-box;" />
+					<button id="saBgPreviewBtn" type="button" style="padding:12px 18px; border-radius:10px; border:1.5px solid #3b82f6; background:transparent; color:#3b82f6; font-weight:700; cursor:pointer; white-space:nowrap;">👁️ Preview</button>
+				</div>
+			</div>
+
+			<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+				<button id="saBgSaveBtn" type="button" style="padding:12px 28px; border-radius:10px; border:none; background:#3b82f6; color:#fff; font-weight:700; cursor:pointer;">💾 Save Background</button>
+				<button id="saBgRemoveBtn" type="button" style="padding:12px 22px; border-radius:10px; border:1.5px solid #fecaca; background:transparent; color:#dc2626; font-weight:700; cursor:pointer;">🗑️ Remove</button>
+			</div>
+			<p id="saBgStatus" style="margin-top:12px; font-size:14px; font-weight:600;"></p>
+
+			<!-- Adaptive Color Detector Toggle -->
+			<div style="margin-top:28px; padding:18px 20px; border-radius:14px; border:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+				<div>
+					<div style="font-size:14px; font-weight:700; color:#0f172a;">🎨 Adaptive Text Color Detector</div>
+					<div style="font-size:12px; color:#64748b; margin-top:3px;">Automatically changes each letter's color based on the background behind it.</div>
+				</div>
+				<label style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;">
+					<span id="adaptiveDetectorLabel" style="font-size:13px; font-weight:600; color:#64748b;">ON</span>
+					<div style="position:relative; width:48px; height:26px;">
+						<input type="checkbox" id="adaptiveDetectorToggle" style="opacity:0; width:0; height:0; position:absolute;" />
+						<span id="adaptiveDetectorTrack" style="
+							position:absolute; inset:0; border-radius:999px;
+							background:#3b82f6; cursor:pointer;
+							transition:background 0.2s;
+						"></span>
+						<span id="adaptiveDetectorThumb" style="
+							position:absolute; top:3px; left:3px;
+							width:20px; height:20px; border-radius:50%;
+							background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2);
+							transition:transform 0.2s;
+							pointer-events:none;
+						"></span>
+					</div>
+				</label>
+			</div>
+		</section>
+
+		<!-- ADVERTISEMENT MANAGEMENT -->
+		<section id="admanage" class="page section">
+			<h2>📢 Advertisement</h2>
+			<p style="margin-bottom:24px; opacity:0.7;">Upload an image or video ad shown at the top of your dashboard. Visible only to you.</p>
+
+			<div id="adPreviewWrap" style="width:100%; max-width:640px; height:180px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:24px; display:flex; align-items:center; justify-content:center; position:relative; background:#0f172a;">
+				<img id="adPreviewImg" src="" alt="" style="width:100%; height:100%; object-fit:cover; display:none;" />
+				<video id="adPreviewVideo" src="" autoplay muted loop playsinline style="width:100%; height:100%; object-fit:cover; display:none;"></video>
+				<iframe id="adPreviewIframe" style="width:100%; height:100%; border:none; display:none;"></iframe>
+				<span id="adPreviewEmpty" style="color:#94a3b8; font-size:14px;">No ad set</span>
+			</div>
+
+			<!-- Tab switcher -->
+			<div style="display:flex; gap:0; margin-bottom:18px; border:1.5px solid #e2e8f0; border-radius:10px; overflow:hidden; max-width:360px;">
+				<button id="adTabUrl" type="button" style="flex:1; padding:10px; border:none; background:#3b82f6; color:#fff; font-weight:700; font-size:13px; cursor:pointer;">🔗 URL</button>
+				<button id="adTabFile" type="button" style="flex:1; padding:10px; border:none; background:transparent; color:#64748b; font-weight:700; font-size:13px; cursor:pointer;">📁 Upload from Device</button>
+			</div>
+
+			<!-- URL input -->
+			<div id="adPanelUrl" style="margin-bottom:12px;">
+				<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Image or Video URL</label>
+				<div style="display:flex; gap:8px;">
+					<input id="adUrlInput" type="url" placeholder="https://example.com/ad.jpg or youtube.com/watch?v=..."
+						style="flex:1; padding:12px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; box-sizing:border-box;" />
+					<button id="adPreviewBtn" type="button" style="padding:12px 18px; border-radius:10px; border:1.5px solid #3b82f6; background:transparent; color:#3b82f6; font-weight:700; cursor:pointer; white-space:nowrap;">👁️ Preview</button>
+				</div>
+			</div>
+
+			<!-- File upload input -->
+			<div id="adPanelFile" style="margin-bottom:12px; display:none;">
+				<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Choose Image or MP4 from your device</label>
+				<input id="adFileInput" type="file" accept="image/*,video/mp4" style="position:absolute; opacity:0; pointer-events:none; width:1px; height:1px;" />
+				<div id="adFilePickerBtn" style="display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:10px; border:2px dashed #cbd5e1; cursor:pointer; background:#f8fafc;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#cbd5e1'">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+					<span id="adFileName" style="font-size:14px; color:#64748b;">No file chosen — click to browse</span>
+				</div>
+			</div>
+
+			<div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;">
+				<button id="adSaveBtn" type="button" style="padding:12px 28px; border-radius:10px; border:none; background:#3b82f6; color:#fff; font-weight:700; cursor:pointer;">💾 Save Ad</button>
+				<button id="adRemoveBtn" type="button" style="padding:12px 22px; border-radius:10px; border:1.5px solid #fecaca; background:transparent; color:#dc2626; font-weight:700; cursor:pointer;">🗑️ Remove</button>
+			</div>
+			<p id="adStatus" style="margin-top:12px; font-size:14px; font-weight:600;"></p>
+		</section>
+
+
+	</main>
+
+	<!-- MODAL FOR LOGOUT -->
+	<div id="logoutOverlay" class="overlay hidden">
+		<div class="modal">
+			<h3>Confirm Logout</h3>
+			<p>Are you sure you want to exit the dashboard?</p>
+			<div style="display: flex; gap: 12px; margin-top: 24px;">
+				<button id="confirmLogout" class="btn btn-danger" style="flex:1;">Logout</button>
+				<button id="cancelLogout" class="btn btn-secondary" style="flex:1;">Cancel</button>
+			</div>
+		</div>
+	</div>
+
+	<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+	<script src="emailjs-config.js"></script>
+	<script src="email-reminder-service.js"></script>
 	
-	.loading-icon svg {
-		width: 70px;
-		height: 70px;
-	}
+	<!-- Loading Screen Script -->
+	<script>
+		// Network connection check
+		let connectionCheckTimeout;
+		
+		// Loading screen utility functions
+		window.showLoading = function(message = 'Loading your dashboard...') {
+			const loadingScreen = document.getElementById('loadingScreen');
+			const loadingContainer = loadingScreen.querySelector('.loading-container');
+			const noConnectionMessage = document.getElementById('noConnectionMessage');
+			const loadingStatus = loadingScreen.querySelector('.loading-status');
+			
+			if (loadingStatus) {
+				loadingStatus.textContent = message;
+			}
+			
+			// Show loading, hide no connection message
+			loadingContainer.classList.remove('hidden');
+			noConnectionMessage.classList.add('hidden');
+			
+			loadingScreen.style.display = 'flex';
+			loadingScreen.classList.remove('fade-out');
+			
+			// Check connection after 2 seconds
+			clearTimeout(connectionCheckTimeout);
+			connectionCheckTimeout = setTimeout(checkConnection, 2000);
+		};
+
+		window.hideLoading = function() {
+			const loadingScreen = document.getElementById('loadingScreen');
+			clearTimeout(connectionCheckTimeout);
+			loadingScreen.classList.add('fade-out');
+			
+			setTimeout(function() {
+				loadingScreen.style.display = 'none';
+			}, 300);
+		};
+		
+		function checkConnection() {
+			if (!navigator.onLine) {
+				showNoConnection();
+			}
+		}
+		
+		function showNoConnection() {
+			const loadingContainer = document.querySelector('.loading-container');
+			const noConnectionMessage = document.getElementById('noConnectionMessage');
+			
+			loadingContainer.classList.add('hidden');
+			noConnectionMessage.classList.remove('hidden');
+		}
+		
+		// Listen for online/offline events
+		window.addEventListener('online', function() {
+			console.log('Connection restored');
+			location.reload();
+		});
+		
+		window.addEventListener('offline', function() {
+			console.log('Connection lost');
+			// Show network error immediately
+			const loadingScreen = document.getElementById('loadingScreen');
+			if (loadingScreen && loadingScreen.style.display !== 'none') {
+				showNoConnection();
+			} else {
+				// If loading screen is not visible, show it with error
+				loadingScreen.style.display = 'flex';
+				loadingScreen.classList.remove('fade-out');
+				document.body.style.overflow = 'hidden';
+				showNoConnection();
+			}
+		});
+
+		// Show loading screen immediately when page starts
+		document.addEventListener('DOMContentLoaded', function() {
+			showLoading('Authenticating...');
+		});
+	</script>
 	
-	.loading-icon-text {
-		font-size: 18px;
-	}
-	
-	.loading-title {
-		font-size: 22px;
-	}
-	
-	.loading-subtitle {
-		font-size: 13px;
-	}
-}
+	<script type="module" src="super-admin-dashboard.js"></script>
 
-/* ===== NO CONNECTION MESSAGE ===== */
-.no-connection-message {
-	text-align: center;
-	animation: fadeInUp 0.5s ease-out;
-}
+</body>
 
-.no-connection-message.hidden {
-	display: none;
-}
-
-.no-connection-icon {
-	margin: 0 auto 24px;
-	width: 80px;
-	height: 80px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: #fef2f2;
-	border-radius: 50%;
-	animation: shake 0.5s ease-in-out;
-}
-
-.no-connection-title {
-	font-size: 24px;
-	font-weight: 700;
-	color: #dc2626;
-	margin: 0 0 12px 0;
-}
-
-.no-connection-text {
-	font-size: 15px;
-	font-weight: 500;
-	color: #64748b;
-	margin: 0 0 24px 0;
-	max-width: 320px;
-	margin-left: auto;
-	margin-right: auto;
-}
-
-.retry-button {
-	display: inline-flex;
-	align-items: center;
-	gap: 8px;
-	padding: 12px 24px;
-	background: #3b82f6;
-	color: #ffffff;
-	border: none;
-	border-radius: 8px;
-	font-size: 14px;
-	font-weight: 600;
-	cursor: pointer;
-	transition: all 0.2s ease;
-	box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.retry-button:hover {
-	background: #2563eb;
-	transform: translateY(-1px);
-	box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.retry-button:active {
-	transform: translateY(0);
-}
-
-@keyframes shake {
-	0%, 100% {
-		transform: translateX(0);
-	}
-	25% {
-		transform: translateX(-10px);
-	}
-	75% {
-		transform: translateX(10px);
-	}
-}
-
-/* ===== SHARED BASE LAYOUT ===== */
-body {
-	margin: 0;
-	font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-	color: #0f172a;
-}
-
-* {
-	transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
-}
-
-.section:not(.hidden) { animation: fadeIn 0.3s ease-out; }
-.hidden { display: none !important; }
-
-.header {
-	position: fixed; top: 0; left: 0; right: 0; height: 65px;
-	background: transparent;
-	display: flex; align-items: center; justify-content: space-between;
-	padding: 0 24px;
-	border-bottom: 1px solid rgba(0,0,0,0.05);
-	z-index: 1000;
-}
-
-.header-center {
-	display: flex; flex-direction: column; align-items: center;
-	justify-content: center; gap: 2px;
-	position: absolute; left: 50%; transform: translateX(-50%);
-}
-
-.header-right { display: flex; align-items: center; gap: 16px; }
-
-.menu-btn {
-	background: #3b82f6; color: white; border: none;
-	width: 44px; height: 38px; border-radius: 8px;
-	font-size: 18px; cursor: pointer;
-	display: flex; align-items: center; justify-content: center;
-}
-.menu-btn:hover { background: #2563eb; }
-
-.header-clock {
-	display: flex; flex-direction: column; align-items: center;
-	background: transparent; padding: 6px 14px;
-	border-radius: 20px; border: 1px solid transparent;
-}
-
-.clock-top { display: flex; align-items: center; gap: 6px; line-height: 1; }
-.clock-bottom {
-	font-size: 11px; font-weight: 700; color: #3b82f6;
-	text-transform: uppercase; letter-spacing: 1px; margin-top: 4px;
-}
-
-.user-name { font-weight: 800; font-size: 16px; color: #0f172a; }
-.user-role { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-
-.notification {
-	display: flex; align-items: center; justify-content: center;
-	position: relative; width: 38px; height: 38px;
-	border-radius: 50%; background: transparent; cursor: pointer;
-	border: 1px solid transparent;
-}
-.notification:hover { background: #f1f5f9; }
-.bell-icon { font-size: 18px; }
-.notification-badge {
-	position: absolute; top: -4px; right: -4px;
-	background: #ef4444; color: white; font-size: 11px; font-weight: bold;
-	padding: 2px 6px; border-radius: 999px; min-width: 18px;
-	text-align: center; box-shadow: 0 0 0 2px #ffffff;
-}
-
-.notify-list {
-	position: absolute; top: 50px; right: 0; width: 280px;
-	background: #ffffff; border: 1px solid #e2e8f0;
-	border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
-	z-index: 2000; max-height: 350px; overflow-y: auto;
-	display: flex; flex-direction: column;
-}
-.notify-list.hidden { display: none; }
-.notify-header {
-	display: flex; align-items: center; justify-content: space-between;
-	padding: 12px 14px; border-bottom: 1px solid #e2e8f0;
-	position: sticky; top: 0; background: #ffffff; z-index: 1;
-}
-.notify-header-title { font-size: 13px; font-weight: 800; color: #0f172a; }
-.notify-clear-btn { border: none; background: transparent; color: #2563eb; font-size: 12px; font-weight: 700; cursor: pointer; padding: 0; }
-.notify-item { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; cursor: pointer; }
-.notify-item:hover { background: #f8fafc; }
-.notify-item.unread { background: #eff6ff; }
-.notify-item-title { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
-.notify-item-message { font-size: 12px; color: #475569; }
-.notify-item-time { margin-top: 6px; font-size: 11px; color: #94a3b8; }
-.notify-empty { padding: 18px 16px; font-size: 13px; color: #64748b; text-align: center; }
-
-.logout-btn {
-	background: transparent; color: #ef4444;
-	border: 1px solid #fca5a5; padding: 8px 16px;
-	border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700;
-	display: flex; align-items: center; gap: 6px;
-}
-.logout-btn:hover { background: #fef2f2; border-color: #ef4444; }
-
-.sidebar {
-	position: fixed; top: 65px; left: 0;
-	width: 80px; height: calc(100vh - 65px);
-	display: flex; flex-direction: column;
-	background: transparent !important;
-	border-right: 1px solid rgba(0,0,0,0.05);
-	transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
-	z-index: 999; overflow: hidden;
-}
-.sidebar.show { width: 280px; }
-
-.sidebar ul { list-style: none; padding: 16px 0; margin: 0; flex: 1; overflow-y: auto; overflow-x: hidden; }
-.sidebar ul::-webkit-scrollbar { width: 6px; }
-.sidebar ul::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 3px; }
-
-.sidebar li {
-	padding: 14px 20px; cursor: pointer; font-weight: 600; font-size: 15px;
-	color: #64748b; border-left: 3px solid transparent;
-	display: flex; align-items: center; gap: 16px; white-space: nowrap;
-}
-.sidebar li::before { content: attr(data-icon); font-size: 20px; min-width: 24px; display: flex; align-items: center; justify-content: center; }
-.sidebar li:hover { background: #f8fafc; color: #0f172a; border-left-color: #3b82f6; transform: translateX(3px); }
-.sidebar li.active { background: linear-gradient(90deg,#eff6ff 0%,rgba(239,246,255,0.5) 100%); color: #1e40af; border-left-color: #3b82f6; font-weight: 700; }
-
-.sidebar:not(.show) li { justify-content: center; padding: 14px 0; }
-.sidebar:not(.show) li span:not(.submenu-arrow) { display: none; }
-
-.submenu { background: transparent; list-style: none; padding: 0; margin: 0; }
-.submenu li { padding: 10px 16px 10px 48px !important; font-size: 13px; color: #64748b; border-left: 3px solid transparent; }
-.submenu li:hover { background: #f8fafc; color: #0f172a; border-left-color: #3b82f6; }
-.submenu.hidden { display: none; }
-.sidebar:not(.show) .submenu { display: none !important; }
-.sidebar:not(.show) .submenu-arrow { display: none; }
-
-#basicSettingsToggle, #advancedSettingsToggle, #emailSettingsToggle {
-	padding: 10px 16px 10px 32px !important; font-weight: 600 !important;
-	color: #0f172a !important; font-size: 13px !important; cursor: pointer;
-	display: flex; justify-content: space-between; align-items: center;
-	background: #f8fafc !important; border-left: 3px solid transparent !important;
-}
-#basicSettingsToggle:hover, #advancedSettingsToggle:hover, #emailSettingsToggle:hover {
-	background: #e2e8f0 !important; border-left-color: #3b82f6 !important;
-}
-#basicSettingsSubmenu li, #advancedSettingsSubmenu li, #emailSettingsSubmenu li {
-	padding: 10px 16px 10px 56px !important; font-size: 13px;
-}
-
-.sidebar-overlay {
-	position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-	background: rgba(0,0,0,0.5); z-index: 998;
-	opacity: 0; visibility: hidden;
-	transition: opacity 0.3s ease, visibility 0.3s ease;
-}
-.sidebar-overlay.show { opacity: 1; visibility: visible; }
-
-.sidebar-footer {
-	padding: 16px; border-top: 1px solid #f1f5f9;
-	background: transparent !important;
-	display: flex; flex-direction: column; gap: 12px;
-}
-.mini-profile { display: flex; align-items: center; gap: 12px; padding: 8px; border-radius: 8px; }
-.mini-profile:hover { background: #f8fafc; }
-.sidebar:not(.show) .mini-profile { justify-content: center; }
-.sidebar-profile-photo { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #3b82f6; flex-shrink: 0; }
-.sidebar-user-info { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
-.sidebar:not(.show) .sidebar-user-info { display: none; }
-.sidebar-user-name { font-weight: 700; font-size: 14px; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sidebar-user-id { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-.sidebar-logout-btn {
-	width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
-	background: transparent; color: #ef4444; border: 1px solid #fca5a5;
-	padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;
-}
-.sidebar:not(.show) .sidebar-logout-btn { padding: 10px; }
-.sidebar:not(.show) .sidebar-logout-btn span:not(.logout-icon) { display: none; }
-.sidebar-logout-btn:hover { background: #fef2f2; border-color: #ef4444; }
-
-.main {
-	margin-top: 65px; margin-left: 80px; padding: 28px;
-	min-height: calc(100vh - 65px);
-	transition: margin-left 0.3s cubic-bezier(0.4,0,0.2,1);
-}
-.sidebar.show ~ .main { margin-left: 280px; }
-
-.page { display: none; }
-.page.active { display: block; animation: fadeIn 0.35s ease-out; }
-
-.greeting-container { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 10px; }
-.greeting-container h2 { margin: 0; font-size: 32px; font-weight: 800; color: #0f172a; letter-spacing: -0.04em; }
-
-.holiday-badge {
-	padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 700;
-	letter-spacing: 0.08em; text-transform: uppercase;
-	display: inline-flex; align-items: center; border: 1px solid transparent;
-	backdrop-filter: blur(8px);
-}
-.holiday-badge.is-working { background: rgba(236,253,245,0.92); color: #047857; border-color: rgba(16,185,129,0.35); }
-.holiday-badge.is-holiday { background: rgba(254,242,242,0.95); color: #b91c1c; border-color: rgba(239,68,68,0.3); }
-
-.status-box, .admin-settings-box, .home-session-box,
-.card, .stat-card, .greeting-block,
-.profile-card-v2, .attendance-box,
-.mark-session-box, .session-card, .admin-setting-item,
-.profile-info-item-v2, .profile-content-v2, .status-message,
-.step-box {
-    background: transparent !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-}
-
-/* Card hover rules moved to end of file */
-
-.header, .sidebar, .sidebar-footer {
-	background: transparent !important;
-	backdrop-filter: none !important;
-	-webkit-backdrop-filter: none !important;
-	box-shadow: none !important;
-}
-
-.btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s ease; }
-.btn-primary { background: #3b82f6; color: #fff; }
-.btn-primary:hover { background: #2563eb; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); }
-.btn-secondary { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
-.btn-secondary:hover { background: #e2e8f0; color: #1e293b; transform: translateY(-1px); }
-.btn-danger { background: #ef4444; color: #fff; }
-.btn-danger:hover { background: #dc2626; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(239,68,68,0.3); }
-
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
-.overlay.hidden { display: none !important; }
-.modal {
-	background: rgba(30,41,59,0.72);
-	backdrop-filter: blur(24px);
-	-webkit-backdrop-filter: blur(24px);
-	border: 1px solid rgba(255,255,255,0.15);
-	padding: 32px;
-	border-radius: 20px;
-	width: 90%;
-	max-width: 420px;
-	box-shadow: 0 25px 50px rgba(0,0,0,0.4);
-	color: #fff;
-}
-.modal h3, .modal p { color: #fff; }
-.modal .btn-secondary { background: rgba(255,255,255,0.12); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
-.modal .btn-secondary:hover { background: rgba(255,255,255,0.22); }
-
-@media (max-width: 768px) {
-	.sidebar { left: -280px; width: 280px; }
-	.sidebar.show { left: 0; width: 280px; }
-	.main { margin-left: 0 !important; }
-	.sidebar.show ~ .main { margin-left: 0 !important; }
-}
-@media (max-width: 600px) { .header-clock { display: none; } }
-@media (max-width: 480px) { .header-center { display: none; } .logout-btn { padding: 8px 12px !important; font-size: 12px !important; } }
-
-/* ===== CONTROLS BAR ===== */
-.admin-controls {
-    margin-bottom: 24px;
-}
-
-.controls-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 20px;
-    padding: 14px 16px;
-    background: rgba(255,255,255,0.7);
-    border: 1px solid rgba(0,0,0,0.07);
-    border-radius: 12px;
-    backdrop-filter: blur(10px);
-}
-.controls-bar input,
-.controls-bar select {
-    padding: 9px 14px;
-    border: 1px solid #e2e8f0;
-    border-radius: 8px;
-    background: #fff;
-    font-size: 14px;
-    color: #1e293b;
-    outline: none;
-    min-width: 140px;
-}
-.controls-bar input:focus,
-.controls-bar select:focus {
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-}
-
-/* ===== CLEAN TABLE STYLES ===== */
-.table-wrap {
-    background: #fff;
-    border: 1px solid rgba(0,0,0,0.08);
-    border-radius: 14px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
-}
-/* Scrollable inner container for all table-wrap tables */
-.table-wrap > table,
-.table-wrap > .table-scroll > table {
-    width: 100%;
-    border-collapse: collapse;
-    background: transparent;
-}
-.table-wrap {
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 520px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100,116,139,0.4) transparent;
-}
-.table-wrap::-webkit-scrollbar { height: 7px; width: 7px; }
-.table-wrap::-webkit-scrollbar-track { background: transparent; }
-.table-wrap::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.4); border-radius: 99px; }
-.table-wrap::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.7); }
-.table-wrap table {
-    width: 100%;
-    min-width: 600px;
-    border-collapse: collapse;
-    background: transparent;
-}
-.table-wrap th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #f8fafc !important;
-    color: #64748b !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-    padding: 13px 16px !important;
-    border-bottom: 2px solid #e2e8f0 !important;
-    white-space: nowrap;
-}
-.table-wrap td {
-    color: #1e293b !important;
-    font-size: 14px !important;
-    padding: 13px 16px !important;
-    border-bottom: 1px solid #f1f5f9 !important;
-    background: transparent !important;
-    vertical-align: middle;
-    white-space: nowrap;
-}
-/* Also apply scroll to .table-responsive */
-.table-responsive {
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 520px;
-    border-radius: 14px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100,116,139,0.4) transparent;
-}
-.table-responsive::-webkit-scrollbar { height: 7px; width: 7px; }
-.table-responsive::-webkit-scrollbar-track { background: transparent; }
-.table-responsive::-webkit-scrollbar-thumb { background: rgba(100,116,139,0.4); border-radius: 99px; }
-.table-responsive::-webkit-scrollbar-thumb:hover { background: rgba(100,116,139,0.7); }
-.table-responsive table {
-    width: 100%;
-    min-width: 600px;
-    border-collapse: collapse;
-    background: transparent;
-}
-.table-responsive th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #f8fafc !important;
-    color: #64748b !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-    padding: 13px 16px !important;
-    border-bottom: 2px solid #e2e8f0 !important;
-    white-space: nowrap;
-}
-.table-responsive td {
-    color: #1e293b !important;
-    font-size: 14px !important;
-    padding: 13px 16px !important;
-    border-bottom: 1px solid #f1f5f9 !important;
-    background: transparent !important;
-    vertical-align: middle;
-    white-space: nowrap;
-}
-.table-wrap tr:last-child td { border-bottom: none !important; }
-.table-wrap tbody tr { transition: background 0.12s ease; }
-.table-wrap tbody tr:hover { background: #f0f7ff !important; cursor: pointer; }
-.table-responsive tbody tr { transition: background 0.12s ease; }
-.table-responsive tbody tr:hover { background: #f0f7ff !important; cursor: pointer; }
-.table-responsive tr:last-child td { border-bottom: none !important; }
-
-/* With background image */
-body.has-bg .table-wrap {
-    background: rgba(255,255,255,0.1) !important;
-    border-color: rgba(255,255,255,0.15) !important;
-    box-shadow: none !important;
-    scrollbar-color: rgba(255,255,255,0.3) transparent;
-}
-body.has-bg .table-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); }
-body.has-bg .table-wrap th {
-    background: rgba(15,23,42,0.75) !important;
-    color: rgba(255,255,255,0.7) !important;
-    border-bottom-color: rgba(255,255,255,0.15) !important;
-    backdrop-filter: blur(8px);
-}
-body.has-bg .table-wrap td {
-    color: rgba(255,255,255,0.9) !important;
-    border-bottom-color: rgba(255,255,255,0.07) !important;
-}
-body.has-bg .table-wrap tbody tr:hover { background: rgba(255,255,255,0.12) !important; }
-
-body.has-bg .table-responsive {
-    scrollbar-color: rgba(255,255,255,0.3) transparent;
-}
-body.has-bg .table-responsive::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); }
-body.has-bg .table-responsive th {
-    background: rgba(15,23,42,0.75) !important;
-    color: rgba(255,255,255,0.7) !important;
-    border-bottom-color: rgba(255,255,255,0.15) !important;
-    backdrop-filter: blur(8px);
-}
-body.has-bg .table-responsive td {
-    color: rgba(255,255,255,0.9) !important;
-    border-bottom-color: rgba(255,255,255,0.07) !important;
-}
-body.has-bg .table-responsive tbody tr:hover { background: rgba(255,255,255,0.12) !important; }
-body.has-bg .controls-bar {
-    background: rgba(255,255,255,0.1) !important;
-    border-color: rgba(255,255,255,0.15) !important;
-}
-body.has-bg .controls-bar input,
-body.has-bg .controls-bar select {
-    background: rgba(255,255,255,0.15) !important;
-    color: #fff !important;
-    border-color: rgba(255,255,255,0.25) !important;
-}
-
-/* has-bg card hover rules moved to end of file */
-
-/* ===== SECTION HEADER ===== */
-.section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 20px;
-}
-.section-header h2 { margin: 0; }
-
-/* ===== BACKGROUND AUDIT ===== */
-.bg-audit-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
-    margin-top: 20px;
-}
-.bg-audit-card {
-    background: #fff;
-    border: 1px solid #e2e8f0;
-    border-radius: 14px;
-    padding: 18px;
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-    transition: box-shadow 0.2s;
-}
-.bg-audit-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
-.bg-audit-thumb {
-    width: 72px;
-    height: 52px;
-    border-radius: 8px;
-    object-fit: cover;
-    background: #f1f5f9;
-    flex-shrink: 0;
-    border: 1px solid #e2e8f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    color: #94a3b8;
-    overflow: hidden;
-}
-.bg-audit-thumb img { width: 100%; height: 100%; object-fit: cover; }
-.bg-audit-info { flex: 1; min-width: 0; }
-.bg-audit-name { font-weight: 700; font-size: 14px; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bg-audit-status { font-size: 12px; margin-top: 4px; }
-.bg-audit-status.has { color: #059669; }
-.bg-audit-status.none { color: #94a3b8; }
-.bg-audit-uploader { font-size: 11px; color: #64748b; margin-top: 3px; }
-.bg-audit-actions { display: flex; gap: 6px; margin-top: 8px; }
-body.has-bg .bg-audit-card {
-    background: rgba(255,255,255,0.1) !important;
-    border-color: rgba(255,255,255,0.15) !important;
-}
-body.has-bg .bg-audit-name { color: #fff !important; }
-body.has-bg .bg-audit-uploader { color: rgba(255,255,255,0.6) !important; }
-
-
-/* ===== CUSTOM SELECT DROPDOWN ===== */
-.custom-select-wrap {
-    position: relative;
-    display: inline-block;
-    min-width: 140px;
-}
-.custom-select-wrap select {
-    /* Keep native select for accessibility/value binding but hide visually */
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    width: 100%;
-    height: 100%;
-    top: 0; left: 0;
-}
-.custom-select-trigger {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-    padding: 9px 14px;
-    border-radius: 8px;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    color: #1e293b;
-    font-size: 14px;
-    cursor: pointer;
-    user-select: none;
-    white-space: nowrap;
-    transition: border-color 0.15s, box-shadow 0.15s;
-    min-width: 140px;
-    max-width: 220px;
-    overflow: hidden;
-}
-.custom-select-label {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-    min-width: 0;
-}
-.custom-select-trigger:hover { border-color: #94a3b8; }
-.custom-select-trigger.open { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
-.custom-select-arrow { font-size: 10px; opacity: 0.5; transition: transform 0.2s; flex-shrink: 0; }
-.custom-select-trigger.open .custom-select-arrow { transform: rotate(180deg); }
-
-.custom-select-panel {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    min-width: 100%;
-    background: #1e293b !important;
-    border: 1px solid rgba(255,255,255,0.12);
-    border-radius: 10px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-    z-index: 9999;
-    overflow: hidden;
-    display: none;
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-}
-.custom-select-panel.open { display: block !important; }
-.custom-select-option {
-    padding: 10px 16px;
-    font-size: 14px;
-    color: rgba(255,255,255,0.85) !important;
-    background: transparent !important;
-    cursor: pointer;
-    transition: background 0.12s, color 0.12s;
-    white-space: nowrap;
-}
-.custom-select-option:hover {
-    background: rgba(255,255,255,0.18) !important;
-    color: #fff !important;
-}
-.custom-select-option.selected {
-    background: rgba(59,130,246,0.35) !important;
-    color: #93c5fd !important;
-    font-weight: 600;
-}
-.custom-select-option.selected:hover {
-    background: rgba(59,130,246,0.5) !important;
-    color: #fff !important;
-}
-
-/* When background is active — trigger becomes glass */
-body.has-bg .custom-select-trigger {
-    background: rgba(255,255,255,0.12) !important;
-    border-color: rgba(255,255,255,0.25) !important;
-    color: #fff !important;
-}
-body.has-bg .custom-select-trigger:hover {
-    background: rgba(255,255,255,0.18) !important;
-}
-
-/* ===== ATTENDANCE TABLE — STICKY HEADER + HORIZONTAL SCROLL ===== */
-.attendance-table-wrap {
-    overflow: hidden;
-    padding: 0;
-}
-.attendance-scroll-container {
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 520px;
-    /* Custom scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100,116,139,0.4) transparent;
-}
-.attendance-scroll-container::-webkit-scrollbar {
-    height: 7px;
-    width: 7px;
-}
-.attendance-scroll-container::-webkit-scrollbar-track {
-    background: transparent;
-}
-.attendance-scroll-container::-webkit-scrollbar-thumb {
-    background: rgba(100,116,139,0.4);
-    border-radius: 99px;
-}
-.attendance-scroll-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(100,116,139,0.7);
-}
-.attendance-fixed-table {
-    width: 100%;
-    min-width: 900px;
-    border-collapse: collapse;
-    background: transparent;
-}
-.attendance-fixed-table thead th {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: #f8fafc !important;
-    color: #64748b !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-    text-transform: uppercase !important;
-    letter-spacing: 0.6px !important;
-    padding: 13px 16px !important;
-    border-bottom: 2px solid #e2e8f0 !important;
-    white-space: nowrap;
-}
-.attendance-fixed-table td {
-    color: #1e293b !important;
-    font-size: 14px !important;
-    padding: 13px 16px !important;
-    border-bottom: 1px solid #f1f5f9 !important;
-    background: transparent !important;
-    vertical-align: middle;
-    white-space: nowrap;
-}
-.attendance-fixed-table tbody tr { transition: background 0.12s ease; }
-.attendance-fixed-table tbody tr:hover { background: #f0f7ff !important; cursor: pointer; }
-.attendance-fixed-table tbody tr:last-child td { border-bottom: none !important; }
-
-/* With background image */
-body.has-bg .attendance-scroll-container::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.3);
-}
-body.has-bg .attendance-fixed-table thead th {
-    background: rgba(15,23,42,0.75) !important;
-    color: rgba(255,255,255,0.7) !important;
-    border-bottom-color: rgba(255,255,255,0.15) !important;
-    backdrop-filter: blur(8px);
-}
-body.has-bg .attendance-fixed-table td {
-    color: rgba(255,255,255,0.9) !important;
-    border-bottom-color: rgba(255,255,255,0.07) !important;
-}
-body.has-bg .attendance-fixed-table tbody tr:hover {
-    background: rgba(255,255,255,0.12) !important;
-}
-
-/* ===== ADVERTISEMENT SLOT ===== */
-#adSlot {
-    display: none;
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    width: 300px;
-    aspect-ratio: 16 / 9;
-    border-radius: 16px;
-    overflow: hidden;
-    background: #0f172a;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-    z-index: 999;
-    transition: width 0.35s ease, aspect-ratio 0.35s ease;
-    animation: adFloatIn 0.4s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes adFloatIn {
-    from { opacity: 0; transform: translateY(40px) scale(0.92); }
-    to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-#adSlot.visible { display: block; }
-#adSlot img, #adSlot video {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    display: block;
-}
-#adSlot iframe {
-    width: 100%; height: 100%;
-    border: none;
-    display: block;
-}
-#adSlotClose {
-    position: absolute;
-    top: 8px; right: 10px;
-    background: rgba(0,0,0,0.55);
-    color: #fff;
-    border: none;
-    border-radius: 50%;
-    width: 26px; height: 26px;
-    font-size: 13px;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-    z-index: 10;
-    opacity: 0.8;
-    transition: opacity 0.2s;
-}
-#adSlotClose:hover { opacity: 1; }
-body.has-bg #adSlot {
-    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-/* ===== CARD HOVER — absolute last so nothing overrides ===== */
-.card, .stat-card, .session-card,
-.status-box, .admin-settings-box,
-.admin-setting-item, .profile-info-item-v2 {
-    transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-}
-.card:hover, .stat-card:hover, .session-card:hover,
-.status-box:hover, .admin-settings-box:hover,
-.admin-setting-item:hover, .profile-info-item-v2:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 10px 24px rgba(0,0,0,0.15) !important;
-}
-/* With background image */
-body.has-bg .sa-stat-card, body.has-bg .sa-card,
-body.has-bg .sa-activity-card, body.has-bg .sa-attention,
-body.has-bg .card, body.has-bg .stat-card,
-body.has-bg .session-card, body.has-bg .status-box,
-body.has-bg .admin-settings-box, body.has-bg .admin-setting-item,
-body.has-bg .profile-info-item-v2 {
-    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
-}
-body.has-bg .sa-stat-card:hover, body.has-bg .sa-card:hover,
-body.has-bg .sa-activity-card:hover, body.has-bg .sa-attention:hover,
-body.has-bg .card:hover, body.has-bg .stat-card:hover,
-body.has-bg .session-card:hover, body.has-bg .status-box:hover,
-body.has-bg .admin-settings-box:hover, body.has-bg .admin-setting-item:hover,
-body.has-bg .profile-info-item-v2:hover {
-    transform: translateY(-4px) !important;
-    box-shadow: 0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.18) !important;
-    background: rgba(255,255,255,0.13) !important;
-}
+</html>
