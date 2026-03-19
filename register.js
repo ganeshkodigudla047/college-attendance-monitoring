@@ -275,6 +275,10 @@ function setupRoleBasedFields() {
 
   if (role === "admin" || role === "principal" || role === "superadmin") {
     adminFields.classList.remove("hidden");
+    // Ensure staff/student fields are never shown for admin roles
+    staffFields.classList.add("hidden");
+    studentFields.classList.add("hidden");
+    faceCaptureSection.classList.add("hidden");
   }
 
   // Load colleges and show selection if no token
@@ -286,7 +290,8 @@ function setupRoleBasedFields() {
     loadColleges();
     collegeSelection.classList.remove("hidden");
   }
-  // If validatedToken exists, validateToken() already handled loading + locking the dropdown  updateAdminCollegeField();
+  // If validatedToken exists, validateToken() already handled loading + locking the dropdown
+  updateAdminCollegeField();
 }
 
 // Setup fields immediately if we have a role, or wait for token validation
