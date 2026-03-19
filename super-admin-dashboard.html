@@ -142,6 +142,11 @@
 			border-radius: var(--home-radius);
 			padding: 24px;
 			box-shadow: var(--home-shadow);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+		.sa-card:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 12px 28px rgba(0,0,0,0.1);
 		}
 		.sa-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 		.sa-card-header .icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
@@ -187,6 +192,11 @@
 			border-radius: var(--home-radius);
 			padding: 24px;
 			box-shadow: var(--home-shadow);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+		.sa-activity-card:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 12px 28px rgba(0,0,0,0.1);
 		}
 		.sa-activity-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
 		.sa-activity-header .left { display: flex; align-items: center; gap: 12px; }
@@ -259,6 +269,11 @@
 			border-radius: var(--home-radius-sm);
 			padding: 20px;
 			box-shadow: var(--home-shadow);
+			transition: transform 0.2s ease, box-shadow 0.2s ease;
+		}
+		.sa-attention:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 12px 28px rgba(0,0,0,0.1);
 		}
 		.sa-attention .sa-section-title { margin-bottom: 12px; }
 		.sa-attention-list { list-style: none; padding: 0; margin: 0; }
@@ -2774,6 +2789,32 @@
 				<button id="saBgRemoveBtn" type="button" style="padding:12px 22px; border-radius:10px; border:1.5px solid #fecaca; background:transparent; color:#dc2626; font-weight:700; cursor:pointer;">🗑️ Remove</button>
 			</div>
 			<p id="saBgStatus" style="margin-top:12px; font-size:14px; font-weight:600;"></p>
+
+			<!-- Adaptive Color Detector Toggle -->
+			<div style="margin-top:28px; padding:18px 20px; border-radius:14px; border:1px solid #e2e8f0; background:#f8fafc; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+				<div>
+					<div style="font-size:14px; font-weight:700; color:#0f172a;">🎨 Adaptive Text Color Detector</div>
+					<div style="font-size:12px; color:#64748b; margin-top:3px;">Automatically changes each letter's color based on the background behind it.</div>
+				</div>
+				<label style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;">
+					<span id="adaptiveDetectorLabel" style="font-size:13px; font-weight:600; color:#64748b;">ON</span>
+					<div style="position:relative; width:48px; height:26px;">
+						<input type="checkbox" id="adaptiveDetectorToggle" style="opacity:0; width:0; height:0; position:absolute;" />
+						<span id="adaptiveDetectorTrack" style="
+							position:absolute; inset:0; border-radius:999px;
+							background:#3b82f6; cursor:pointer;
+							transition:background 0.2s;
+						"></span>
+						<span id="adaptiveDetectorThumb" style="
+							position:absolute; top:3px; left:3px;
+							width:20px; height:20px; border-radius:50%;
+							background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.2);
+							transition:transform 0.2s;
+							pointer-events:none;
+						"></span>
+					</div>
+				</label>
+			</div>
 		</section>
 
 		<!-- ADVERTISEMENT MANAGEMENT -->
