@@ -34,6 +34,207 @@ const TRANSPARENT_SELECTORS = [
 ].join(',');
 
 let _bgObserver = null;
+let _adaptiveCanvas = null;
+let _adaptiveCtx = null;
+let _adaptiveImg = null;
+let _adaptiveRaf = null;
+let _adaptiveUrl = null;
+let _adaptiveMutationObserver = null;
+
+const SKIP_TAGS = new Set(['SCRIPT','STYLE','NOSCRIPT','IFRAME','INPUT','TEXTAREA','SELECT','OPTION','SVG','PATH','IMG','VIDEO','CANVAS','CODE','PRE']);
+const ADAPTIVE_ATTR = 'data-adaptive-colored';
+
+/** Wrap every word-level text node in a <span data-adaptive-colored> so we can color each word */
+function _wrapTextNodes(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            if (!node.textContent.trim()) return NodeFilter.FILTER_REJECT;
+            const p = node.parentElement;
+            if (!p) return NodeFilter.FILTER_REJECT;
+            if (SKIP_TAGS.has(p.tagName)) return NodeFilter.FILTER_REJECT;
+            if (p.hasAttribute(ADAPTIVE_ATTR)) return NodeFilter.FILTER_REJECT; // already wrapped
+            if (p.closest('[data-adaptive-colored]')) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+        }
+    });
+
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+
+    nodes.forEach(textNode => {
+        const parent = textNode.parentElement;
+        if (!parent || SKIP_TAGS.has(parent.tagName)) return;
+        const text = textNode.textContent;
+        // Split into words preserving spaces
+        const parts = text.split(/(\s+)/);
+        if (parts.length <= 1) {
+            // Single word — just mark the parent
+            const span = document.createElement('span');
+            span.setAttribute(ADAPTIVE_ATTR, '1');
+            span.style.display = 'inline';
+            span.textContent = text;
+            textNode.replaceWith(span);
+        } else {
+            const frag = document.createDocumentFragment();
+            parts.forEach(part => {
+                if (!part) return;
+                if (/^\s+$/.test(part)) {
+                    frag.appendChild(document.createTextNode(part));
+                } else {
+                    const span = document.createElement('span');
+                    span.setAttribute(ADAPTIVE_ATTR, '1');
+                    span.style.display = 'inline';
+                    span.textContent = part;
+                    frag.appendChild(span);
+                }
+            });
+            textNode.replaceWith(frag);
+        }
+    });
+}
+
+/** Sample average luminance of a rect region from the loaded bg image */
+function _sampleLuminance(x, y, w, h) {
+    if (!_adaptiveCtx || !_adaptiveImg || !_adaptiveImg.complete) return null;
+    const iw = _adaptiveImg.naturalWidth  || 1;
+    const ih = _adaptiveImg.naturalHeight || 1;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    // Background is fixed — map viewport coords (not document coords) to image coords
+    // x, y here are already getBoundingClientRect values (viewport-relative)
+    const scaleX = iw / vw;
+    const scaleY = ih / vh;
+    const sx = Math.max(0, Math.min(iw - 1, Math.floor(x * scaleX)));
+    const sy = Math.max(0, Math.min(ih - 1, Math.floor(y * scaleY)));
+    const sw = Math.max(1, Math.min(iw - sx, Math.floor(w * scaleX)));
+    const sh = Math.max(1, Math.min(ih - sy, Math.floor(h * scaleY)));
+    try {
+        const data = _adaptiveCtx.getImageData(sx, sy, sw, sh).data;
+        let total = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            total += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+        }
+        return total / (data.length / 4);
+    } catch (_) { return null; }
+}
+
+function _getEffectiveBgColor(el) {
+    // Walk up the DOM to find the first element with a non-transparent background
+    let node = el;
+    while (node && node !== document.body) {
+        const bg = window.getComputedStyle(node).backgroundColor;
+        if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
+            const m = bg.match(/[\d.]+/g);
+            if (m) return { r: +m[0], g: +m[1], b: +m[2], a: m[3] !== undefined ? +m[3] : 1 };
+        }
+        node = node.parentElement;
+    }
+    return null; // fully transparent — use canvas sample
+}
+
+function _luminanceFromRGB(r, g, b) {
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+}
+
+function _applyAdaptiveColors() {
+    const spans = document.querySelectorAll(`span[${ADAPTIVE_ATTR}]`);
+    spans.forEach(el => {
+        const rect = el.getBoundingClientRect();
+        // Skip off-screen elements (with generous buffer for partially visible)
+        if (rect.width < 1 || rect.height < 1) return;
+        if (rect.bottom < -300 || rect.top > window.innerHeight + 300) return;
+
+        // Check if element has its own opaque background
+        const ownBg = _getEffectiveBgColor(el);
+        let lum;
+
+        if (ownBg && ownBg.a > 0.5) {
+            lum = _luminanceFromRGB(ownBg.r, ownBg.g, ownBg.b);
+        } else {
+            // Background is fixed — use viewport coords directly (no scrollY offset)
+            // Sample at the center of the span for accuracy
+            const cx = rect.left + rect.width / 2;
+            const cy = rect.top + rect.height / 2;
+            lum = _sampleLuminance(cx, cy, Math.max(1, rect.width), Math.max(1, rect.height));
+            if (lum === null) return;
+        }
+
+        const isDark = lum < 140;
+        el.style.setProperty('color', isDark ? '#ffffff' : '#0f172a', 'important');
+        el.style.setProperty('text-shadow',
+            isDark ? '0 1px 4px rgba(0,0,0,0.85)' : '0 1px 2px rgba(255,255,255,0.8)',
+            'important');
+    });
+}
+
+function _scheduleAdaptive() {
+    if (_adaptiveRaf) cancelAnimationFrame(_adaptiveRaf);
+    _adaptiveRaf = requestAnimationFrame(() => {
+        _adaptiveRaf = null;
+        _applyAdaptiveColors();
+    });
+}
+
+function _loadAdaptiveImage(imageUrl) {
+    _adaptiveCanvas = document.createElement('canvas');
+    _adaptiveCtx = _adaptiveCanvas.getContext('2d', { willReadFrequently: true });
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        _adaptiveCanvas.width  = img.naturalWidth;
+        _adaptiveCanvas.height = img.naturalHeight;
+        _adaptiveCtx.drawImage(img, 0, 0);
+        _adaptiveImg = img;
+        _wrapTextNodes(document.body);
+        _applyAdaptiveColors();
+    };
+    img.onerror = () => {
+        // Fallback: fetch as blob to bypass CORS
+        fetch(imageUrl)
+            .then(r => r.blob())
+            .then(blob => createImageBitmap(blob))
+            .then(bitmap => {
+                _adaptiveCanvas.width  = bitmap.width;
+                _adaptiveCanvas.height = bitmap.height;
+                _adaptiveCtx.drawImage(bitmap, 0, 0);
+                _adaptiveImg = { complete: true, naturalWidth: bitmap.width, naturalHeight: bitmap.height };
+                _wrapTextNodes(document.body);
+                _applyAdaptiveColors();
+            })
+            .catch(() => {});
+    };
+    const sep = imageUrl.includes('?') ? '&' : '?';
+    img.src = imageUrl + sep + '_cb=' + Date.now();
+
+    // Re-run on scroll and resize — drives per-letter color change as user scrolls
+    window.addEventListener('scroll', _scheduleAdaptive, { passive: true });
+    window.addEventListener('resize', _scheduleAdaptive, { passive: true });
+
+    // Watch for new DOM content — wrap new text nodes then recolor
+    _adaptiveMutationObserver = new MutationObserver((mutations) => {
+        for (const m of mutations) {
+            for (const node of m.addedNodes) {
+                if (node.nodeType === 1) _wrapTextNodes(node);
+            }
+        }
+        _scheduleAdaptive();
+    });
+    _adaptiveMutationObserver.observe(document.body, { childList: true, subtree: true });
+}
+
+
+function _stopAdaptive() {
+    window.removeEventListener('scroll', _scheduleAdaptive);
+    window.removeEventListener('resize', _scheduleAdaptive);
+    if (_adaptiveRaf) { cancelAnimationFrame(_adaptiveRaf); _adaptiveRaf = null; }
+    if (_adaptiveMutationObserver) { _adaptiveMutationObserver.disconnect(); _adaptiveMutationObserver = null; }
+    _adaptiveImg = null;
+    _adaptiveCanvas = null;
+    _adaptiveCtx = null;
+    _adaptiveUrl = null;
+}
 
 /**
  * Sample the brightness of an image URL using a canvas.
@@ -356,6 +557,9 @@ export async function applyCollegeBackground(imageUrl) {
     _stripInlineBackgrounds();
 
     try { sessionStorage.setItem("collegeBgBrightness", brightness); } catch (_) {}
+
+    // Start per-element adaptive color detection
+    _loadAdaptiveImage(imageUrl);
 }
 
 /**
@@ -392,6 +596,7 @@ export function removeCollegeBackground() {
     if (styleEl) styleEl.remove();
     document.body.classList.remove("has-bg");
     _stopObserver();
+    _stopAdaptive();
     // Restore default color-scheme on all selects
     document.querySelectorAll('select').forEach(s => { s.style.colorScheme = ''; });
     try { sessionStorage.removeItem("collegeBgUrl"); } catch (_) {}
