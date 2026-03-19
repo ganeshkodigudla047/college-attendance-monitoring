@@ -1039,7 +1039,21 @@ onAuthStateChanged(auth, async user => {
 		showLoading('Loading your profile...');
 
 		loadSecuritySettings();
-		const snap = await getDoc(doc(db, "users", user.uid));
+		let snap;
+		try {
+			snap = await getDoc(doc(db, "users", user.uid));
+		} catch (fetchErr) {
+			if (_isOfflineError(fetchErr)) {
+				// Try Firestore cache
+				const { getDocFromCache } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js");
+				try { snap = await getDocFromCache(doc(db, "users", user.uid)); } catch (_) {}
+			}
+			if (!snap) {
+				hideLoading();
+				alert('No internet connection. Please check your network and try again.');
+				return;
+			}
+		}
 		const me = snap.data();
 
 		if (!me) {
@@ -1130,8 +1144,13 @@ onAuthStateChanged(auth, async user => {
 
 	} catch (error) {
 		console.error('Error during initialization:', error);
-		alert('Error loading dashboard. Please try again.');
-		hideLoading();
+		if (_isOfflineError(error)) {
+			hideLoading();
+			alert('No internet connection. Please check your network and refresh the page.');
+		} else {
+			alert('Error loading dashboard. Please try again.');
+			hideLoading();
+		}
 	}
 
 });
@@ -1843,8 +1862,8 @@ async function loadAttendanceAudit() {
 				</tr>
 		`).join("");
 	} catch (error) {
-		console.error("loadAttendanceAudit error", error);
-		attendanceAuditBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#ef4444;">Failed to load attendance audit.</td></tr>';
+		if (!_isOfflineError(error)) console.error("loadAttendanceAudit error", error);
+		if (attendanceAuditBody) attendanceAuditBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#ef4444;">Failed to load attendance audit.</td></tr>';
 	}
 }
 
@@ -3948,10 +3967,14 @@ if (saveSecuritySettings) {
 }
 
 async function loadSecuritySettings() {
-	const snap = await getDoc(doc(db, "settings", "security"));
-	if (snap.exists()) {
-		const data = snap.data();
-		if (hodProfileApprovalToggle) hodProfileApprovalToggle.checked = !!data.hodProfileApprovalEnabled;
+	try {
+		const snap = await getDoc(doc(db, "settings", "security"));
+		if (snap.exists()) {
+			const data = snap.data();
+			if (hodProfileApprovalToggle) hodProfileApprovalToggle.checked = !!data.hodProfileApprovalEnabled;
+		}
+	} catch (err) {
+		if (!_isOfflineError(err)) console.warn('loadSecuritySettings error:', err);
 	}
 }
 
@@ -7064,6 +7087,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const removeBtn = document.getElementById('saBgRemoveBtn');
     if (removeBtn) removeBtn.addEventListener('click', removeSuperAdminBg);
+
+    // ── Adaptive Color Detector toggle ──
+    const toggle    = document.getElementById('adaptiveDetectorToggle');
+    const track     = document.getElementById('adaptiveDetectorTrack');
+    const thumb     = document.getElementById('adaptiveDetectorThumb');
+    const label     = document.getElementById('adaptiveDetectorLabel');
+
+    function _applyToggleUI(enabled) {
+        if (!toggle) return;
+        toggle.checked      = enabled;
+        track.style.background  = enabled ? '#3b82f6' : '#cbd5e1';
+        thumb.style.transform   = enabled ? 'translateX(22px)' : 'translateX(0)';
+        label.textContent       = enabled ? 'ON' : 'OFF';
+        label.style.color       = enabled ? '#3b82f6' : '#94a3b8';
+    }
+
+    if (toggle) {
+        // Init from saved preference
+        import('./college-background.js').then(m => {
+            const enabled = m.isAdaptiveDetectorEnabled();
+            _applyToggleUI(enabled);
+
+            toggle.addEventListener('change', () => {
+                const on = toggle.checked;
+                _applyToggleUI(on);
+                m.setAdaptiveDetector(on);
+            });
+            // Also allow clicking the track/thumb area
+            track.addEventListener('click', () => {
+                toggle.checked = !toggle.checked;
+                toggle.dispatchEvent(new Event('change'));
+            });
+        });
+    }
 });
 
 /* ================= PLATFORM BACKGROUND ================= */
