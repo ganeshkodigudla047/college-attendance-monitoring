@@ -6036,7 +6036,7 @@ function renderAdminList(adminList) {
 	}
 
 	const adminCards = adminList.map(admin => `
-        <div class="admin-card" style="background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+        <div class="admin-card" style="border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.15);">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                 <div style="width: 50px; height: 50px; border-radius: 50%; background: ${getRoleColor(admin.role)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.25rem;">
                     ${admin.name.charAt(0).toUpperCase()}
@@ -6214,7 +6214,7 @@ function renderCollegeList(collegeList) {
 	}
 
 	const collegeCards = collegeList.map(college => `
-        <div class="college-card" style="background: white; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0;">
+        <div class="college-card" style="border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.15);">
             <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
                 <div style="width: 60px; height: 60px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.5rem;">
                     🏫
@@ -6425,13 +6425,13 @@ function renderUserList(users, category = 'all') {
 
 		return `
             <div style="margin-bottom: 2rem;">
-                <h3 style="margin: 0 0 1rem 0; padding: 1rem; background: #f8fafc; border-radius: 8px; color: #1e293b; font-size: 1.1rem; font-weight: 700; border-left: 4px solid #3b82f6;">
+                <h3 style="margin: 0 0 1rem 0; padding: 1rem; background: transparent; border-radius: 8px; color: #1e293b; font-size: 1.1rem; font-weight: 700; border-left: 4px solid #3b82f6;">
                     🏫 ${escapeHtml(collegeName)} (${collegeUsers.length} users)
                 </h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 1rem;">
                     ${collegeUsers.map(user => `
-                        <div class="user-card" onclick="openUserDetails('${user.id}')" style="background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
+                        <div class="user-card" onclick="openUserDetails('${user.id}')" style="border-radius: 8px; padding: 1rem; border: 1px solid rgba(255,255,255,0.15); cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;">
                             <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
                                 <div style="width: 40px; height: 40px; border-radius: 50%; background: ${getUserRoleColor(user.role)}; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1rem;">
                                     ${user.name.charAt(0).toUpperCase()}
@@ -7024,7 +7024,12 @@ async function loadSuperAdminBg() {
     const url = await loadSuperAdminBgFromFirestore();
     _saBgApplyPreview(url);
     const input = document.getElementById('saBgUrlInput');
-    if (input && url) input.value = url;
+    if (input && url && !url.startsWith('data:')) input.value = url;
+    // Reset file tab state
+    const fileInput = document.getElementById('saBgFileInput');
+    const fileNameLabel = document.getElementById('saBgFileName');
+    if (fileInput) fileInput.value = '';
+    if (fileNameLabel) fileNameLabel.textContent = 'No file chosen — click to browse';
 }
 
 function _saBgApplyPreview(url) {
@@ -7071,6 +7076,50 @@ async function removeSuperAdminBg() {
 
 // Wire up the section buttons
 document.addEventListener('DOMContentLoaded', () => {
+    // ── Tab switching ──
+    const tabUrl  = document.getElementById('saBgTabUrl');
+    const tabFile = document.getElementById('saBgTabFile');
+    const panelUrl  = document.getElementById('saBgPanelUrl');
+    const panelFile = document.getElementById('saBgPanelFile');
+
+    function _saBgSwitchTab(mode) {
+        const isUrl = mode === 'url';
+        if (tabUrl)  { tabUrl.style.background  = isUrl  ? '#3b82f6' : 'transparent'; tabUrl.style.color  = isUrl  ? '#fff' : '#64748b'; }
+        if (tabFile) { tabFile.style.background = !isUrl ? '#3b82f6' : 'transparent'; tabFile.style.color = !isUrl ? '#fff' : '#64748b'; }
+        if (panelUrl)  panelUrl.style.display  = isUrl  ? 'block' : 'none';
+        if (panelFile) panelFile.style.display = !isUrl ? 'block' : 'none';
+    }
+
+    if (tabUrl)  tabUrl.addEventListener('click',  () => _saBgSwitchTab('url'));
+    if (tabFile) tabFile.addEventListener('click', () => _saBgSwitchTab('file'));
+
+    // ── File picker ──
+    const fileInput     = document.getElementById('saBgFileInput');
+    const filePickerBtn = document.getElementById('saBgFilePickerBtn');
+    const fileNameLabel = document.getElementById('saBgFileName');
+    let _saBgFileDataUrl = null;
+
+    if (filePickerBtn && fileInput) {
+        filePickerBtn.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            if (file.size > 1.5 * 1024 * 1024) {
+                _saBgStatus('Image too large. Please use an image under 1.5 MB.', false);
+                return;
+            }
+            if (fileNameLabel) fileNameLabel.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                _saBgFileDataUrl = e.target.result;
+                _saBgApplyPreview(_saBgFileDataUrl);
+                _saBgStatus('Image loaded — click Save to apply.', true);
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // ── Preview button (URL tab) ──
     const previewBtn = document.getElementById('saBgPreviewBtn');
     if (previewBtn) previewBtn.addEventListener('click', () => {
         const url = document.getElementById('saBgUrlInput')?.value.trim();
@@ -7079,10 +7128,17 @@ document.addEventListener('DOMContentLoaded', () => {
         _saBgStatus('Preview loaded.', true);
     });
 
+    // ── Save button ──
     const saveBtn = document.getElementById('saBgSaveBtn');
     if (saveBtn) saveBtn.addEventListener('click', () => {
-        const url = document.getElementById('saBgUrlInput')?.value.trim();
-        saveSuperAdminBg(url);
+        const activeTab = panelFile && panelFile.style.display !== 'none' ? 'file' : 'url';
+        if (activeTab === 'file') {
+            if (!_saBgFileDataUrl) return _saBgStatus('Please choose an image file first.', false);
+            saveSuperAdminBg(_saBgFileDataUrl);
+        } else {
+            const url = document.getElementById('saBgUrlInput')?.value.trim();
+            saveSuperAdminBg(url);
+        }
     });
 
     const removeBtn = document.getElementById('saBgRemoveBtn');

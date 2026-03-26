@@ -661,7 +661,7 @@ body {
 
 /* With background image */
 body.has-bg .table-wrap {
-    background: rgba(255,255,255,0.1) !important;
+    background: transparent !important;
     border-color: rgba(255,255,255,0.15) !important;
     box-shadow: none !important;
     scrollbar-color: rgba(255,255,255,0.3) transparent;
@@ -703,6 +703,20 @@ body.has-bg .controls-bar select {
     background: rgba(255,255,255,0.15) !important;
     color: #fff !important;
     border-color: rgba(255,255,255,0.25) !important;
+}
+body.has-bg .tab-scroller {
+    background: transparent !important;
+    border-color: rgba(255,255,255,0.15) !important;
+}
+body.has-bg .provisioning-card,
+body.has-bg .audit-log-card,
+body.has-bg .bg-audit-card,
+body.has-bg .admin-card,
+body.has-bg .college-card,
+body.has-bg .user-card {
+    background: transparent !important;
+    border-color: rgba(255,255,255,0.15) !important;
+    box-shadow: none !important;
 }
 
 /* has-bg card hover rules moved to end of file */
@@ -1024,3 +1038,120 @@ body.has-bg .profile-info-item-v2:hover {
     box-shadow: 0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.18) !important;
     background: rgba(255,255,255,0.13) !important;
 }
+
+/* ===== NUCLEAR TRANSPARENCY OVERRIDE — catches ALL remaining solid backgrounds ===== */
+/* This block must stay at the very end of the file to win the cascade */
+
+body.has-bg *:not(body):not(button):not(.btn):not([class*="btn"]):not(input):not(select):not(option):not(textarea):not(img):not(video):not(canvas):not(svg):not(path):not(circle):not(.loading-overlay):not(#loadingScreen):not(.notification-badge):not(.bell-icon):not(.menu-btn):not(.logout-btn):not(.sidebar-logout-btn):not(.notify-list):not(.modal):not(.modal-overlay):not(.modal-card):not(#logoutOverlay):not(.overlay) {
+    background-color: transparent !important;
+    background-image: none !important;
+    box-shadow: none !important;
+}
+
+/* Restore body background image */
+body.has-bg {
+    background-color: transparent !important;
+}
+
+/* Restore header background image trick */
+body.has-bg .header {
+    background-image: inherit !important;
+    background-size: cover !important;
+    background-position: center top !important;
+    background-attachment: fixed !important;
+}
+
+/* Keep table headers readable */
+body.has-bg th,
+body.has-bg .table-wrap th,
+body.has-bg .table-responsive th,
+body.has-bg .invite-table th {
+    background-color: rgba(15,23,42,0.75) !important;
+    color: rgba(255,255,255,0.85) !important;
+}
+
+/* Keep notification list visible */
+body.has-bg .notify-list {
+    background-color: rgba(15,23,42,0.92) !important;
+    backdrop-filter: blur(12px) !important;
+}
+body.has-bg .notify-item:hover {
+    background-color: rgba(255,255,255,0.1) !important;
+}
+
+/* Keep modal/overlay backgrounds */
+body.has-bg .modal-overlay,
+body.has-bg .overlay,
+body.has-bg #logoutOverlay {
+    background-color: rgba(0,0,0,0.6) !important;
+}
+body.has-bg .modal-card,
+body.has-bg .modal {
+    background-color: rgba(15,23,42,0.95) !important;
+    backdrop-filter: blur(20px) !important;
+}
+
+/* Keep loading screen */
+body.has-bg #loadingScreen,
+body.has-bg .loading-overlay {
+    background-color: rgba(15,23,42,0.95) !important;
+}
+
+/* Keep buttons with their own colors */
+body.has-bg button,
+body.has-bg .btn,
+body.has-bg [class*="btn-"] {
+    background-color: revert !important;
+    background-image: none !important;
+}
+body.has-bg .btn-primary,
+body.has-bg button[style*="background: #3b82f6"],
+body.has-bg button[style*="background:#3b82f6"] {
+    background-color: #3b82f6 !important;
+}
+body.has-bg .btn-danger,
+body.has-bg button[style*="background: #dc2626"],
+body.has-bg button[style*="background:#dc2626"] {
+    background-color: #dc2626 !important;
+}
+body.has-bg .btn-secondary {
+    background-color: rgba(255,255,255,0.15) !important;
+}
+body.has-bg #approveSelected { background-color: #3b82f6 !important; }
+body.has-bg #rejectSelected  { background-color: #dc2626 !important; }
+body.has-bg #manageCollegesBtn { background-color: #3b82f6 !important; }
+body.has-bg .menu-btn { background-color: #3b82f6 !important; }
+body.has-bg .logout-btn,
+body.has-bg .sidebar-logout-btn { background-color: transparent !important; }
+
+/* Keep inputs readable */
+body.has-bg input:not([type="checkbox"]):not([type="radio"]),
+body.has-bg select,
+body.has-bg textarea {
+    background-color: rgba(255,255,255,0.12) !important;
+    color: #fff !important;
+    border-color: rgba(255,255,255,0.25) !important;
+}
+body.has-bg input::placeholder { color: rgba(255,255,255,0.5) !important; }
+body.has-bg select option { background-color: #1e293b !important; color: #f1f5f9 !important; }
+body.has-bg select option:hover,
+body.has-bg select option:focus,
+body.has-bg select option:checked { background-color: #3b82f6 !important; color: #fff !important; }
+
+/* Notification badge */
+body.has-bg .notification-badge { background-color: #ef4444 !important; }
+
+/* Active sidebar item highlight */
+body.has-bg .sidebar li.active {
+    background-color: rgba(59,130,246,0.25) !important;
+    border-radius: 8px;
+}
+body.has-bg .sidebar li:hover {
+    background-color: rgba(255,255,255,0.08) !important;
+    border-radius: 8px;
+}
+
+/* Status badges keep their colors */
+body.has-bg .status-registered { background-color: rgba(16,185,129,0.25) !important; color: #6ee7b7 !important; }
+body.has-bg .status-pending    { background-color: rgba(245,158,11,0.25) !important; color: #fcd34d !important; }
+body.has-bg .status-expired    { background-color: rgba(239,68,68,0.25)  !important; color: #fca5a5 !important; }

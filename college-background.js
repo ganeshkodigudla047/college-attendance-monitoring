@@ -20,6 +20,12 @@ const TRANSPARENT_SELECTORS = [
     '#students', '#students *', '#staff', '#staff *',
     '#attendance', '#attendance *', '#profile', '#profile *',
     '#emailreminders', '#emailreminders *',
+    '#invite', '#invite *', '#adminlist', '#adminlist *',
+    '#collegelist', '#collegelist *', '#userlist', '#userlist *',
+    '#messages', '#messages *', '#dayscount', '#dayscount *',
+    '#bgaudit', '#bgaudit *', '#platformbg', '#platformbg *',
+    '#superadminbg', '#superadminbg *', '#admanage', '#admanage *',
+    '#holiday', '#holiday *', '#security', '#security *',
     '.status-box', '.admin-settings-box',
     '.home-session-box', '.mark-session-box', '.attendance-box',
     '.records-container', '.table-container', '.profile-card-v2',
@@ -30,6 +36,10 @@ const TRANSPARENT_SELECTORS = [
     '.session-card', '.admin-setting-item', '.profile-info-item-v2',
     '.admin-profile-field', '.status-message', '.step-box',
     '.sa-info-row', '.sa-config-item', '.profile-detail-item',
+    '.controls-bar', '.admin-controls', '.tab-scroller',
+    '.table-wrap', '.table-responsive',
+    '.provisioning-card', '.audit-log-card', '.bg-audit-card',
+    '.admin-card', '.college-card', '.user-card',
     'table', 'th', 'td'
 ].join(',');
 
@@ -311,10 +321,14 @@ function _stripInlineBackgrounds() {
         el.style.removeProperty('background');
         el.style.removeProperty('background-color');
         el.style.removeProperty('background-image');
+        el.style.removeProperty('box-shadow');
     });
     // Strip ALL inline backgrounds from every element on the page
-    document.querySelectorAll('.header, .header *, .sidebar, .sidebar *, .sidebar-footer, .section *, .page *').forEach(el => {
+    document.querySelectorAll('*').forEach(el => {
         if (el.closest('.custom-select-wrap')) return;
+        if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'OPTION' || el.tagName === 'TEXTAREA') return;
+        if (el.id === 'loadingScreen' || el.closest('#loadingScreen')) return;
+        if (el.classList.contains('modal') || el.classList.contains('overlay') || el.closest('.modal') || el.closest('.overlay')) return;
         if (el.style.background || el.style.backgroundColor || el.style.backgroundImage) {
             el.style.removeProperty('background');
             el.style.removeProperty('background-color');
@@ -330,7 +344,7 @@ function _startObserver() {
         // Re-apply dark color-scheme to any newly added selects
         document.querySelectorAll('select').forEach(s => { s.style.colorScheme = 'dark'; });
     });
-    _bgObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style'] });
+    _bgObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
 }
 
 function _stopObserver() {
@@ -399,7 +413,16 @@ function _buildCSS(imageUrl, isDark) {
         .session-card, .admin-setting-item, .profile-info-item-v2,
         .admin-profile-field, .status-message, .step-box,
         .sa-info-row, .sa-config-item, .profile-detail-item,
-        .notify-list, .notify-header {
+        .notify-list, .notify-header,
+        .controls-bar, .admin-controls, .tab-scroller,
+        .table-wrap, .table-responsive,
+        .provisioning-card, .audit-log-card, .bg-audit-card,
+        .admin-card, .college-card, .user-card,
+        .access-management-container > div,
+        [style*="background: #f8fafc"], [style*="background:#f8fafc"],
+        [style*="background: white"], [style*="background:white"],
+        [style*="background: #ffffff"], [style*="background:#ffffff"],
+        [style*="background: #fef3c7"], [style*="background:#fef3c7"] {
             background: transparent !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
@@ -427,10 +450,10 @@ function _buildCSS(imageUrl, isDark) {
             position: sticky;
             top: 0;
             z-index: 10;
-            background: rgba(15,23,42,0.8) !important;
-            color: rgba(255,255,255,0.75) !important;
+            background: transparent !important;
+            color: rgba(255,255,255,0.85) !important;
             border-bottom: 2px solid rgba(255,255,255,0.15) !important;
-            backdrop-filter: blur(8px) !important;
+            backdrop-filter: none !important;
             white-space: nowrap;
         }
         td, .records-fixed-table td {

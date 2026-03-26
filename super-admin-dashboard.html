@@ -344,11 +344,11 @@
 		}
 
 		.submenu {
-			background: #f8fafc;
+			background: transparent;
 			list-style: none;
 			padding: 0;
 			margin: 0;
-			border-left: 3px solid #e2e8f0;
+			border-left: 3px solid rgba(255,255,255,0.2);
 		}
 
 		.submenu li {
@@ -787,36 +787,38 @@
 				font-size: 13px !important;
 			}
 		}
-		/* ===== BACKGROUND TRANSPARENCY ===== */
-		.header {
+		/* ===== BACKGROUND TRANSPARENCY — only when a bg image is active ===== */
+		body.has-bg .header {
 			background: transparent !important;
 			backdrop-filter: none !important;
 			box-shadow: none !important;
 		}
-		.sidebar, .sidebar-footer {
+		body.has-bg .sidebar,
+		body.has-bg .sidebar-footer {
 			background: transparent !important;
 			backdrop-filter: none !important;
 			box-shadow: none !important;
 		}
-		.page.section {
+		body.has-bg .page.section {
 			background: transparent !important;
 			box-shadow: none !important;
 		}
-		.sa-stat-card,
-		.sa-card,
-		.sa-activity-card,
-		.sa-attention,
-		.status-box,
-		.admin-settings-box,
-		.cards-container .card,
-		.records-container,
-		.table-container {
+		body.has-bg .sa-stat-card,
+		body.has-bg .sa-card,
+		body.has-bg .sa-activity-card,
+		body.has-bg .sa-attention,
+		body.has-bg .status-box,
+		body.has-bg .admin-settings-box,
+		body.has-bg .cards-container .card,
+		body.has-bg .records-container,
+		body.has-bg .table-container {
 			background: transparent !important;
 			box-shadow: none !important;
 		}
-		.sa-info-row,
-		.sa-config-item,
-		table, th {
+		body.has-bg .sa-info-row,
+		body.has-bg .sa-config-item,
+		body.has-bg table,
+		body.has-bg th {
 			background: transparent !important;
 		}
 	</style>
@@ -1149,7 +1151,7 @@
 			<h2>✅ Approvals</h2>
 
 			<div class="tab-scroller"
-				style="margin-bottom: 24px; display: flex; gap: 8px; background: #f8fafc; padding: 6px; border-radius: 12px; border: 1px solid #e2e8f0; width: fit-content; flex-wrap: wrap;">
+				style="margin-bottom: 24px; display: flex; gap: 8px; background: transparent; padding: 6px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); width: fit-content; flex-wrap: wrap;">
 				<button id="showRegistrations" class="sub-tab-btn active"
 					style="padding: 9px 18px; border-radius: 8px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: 600; font-size: 14px; transition: all 0.2s;">User Registrations</button>
 				<button id="showProfileUpdates" class="sub-tab-btn"
@@ -1442,7 +1444,7 @@
 			<h2>🏫 College Directory</h2>
 
 			<div
-				style="background: #f8fafc; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid #e2e8f0;">
+				style="background: transparent; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; border: 1px solid rgba(255,255,255,0.15);">
 				<div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
 					<span style="font-size: 1.5rem;">🏫</span>
 					<div>
@@ -1582,7 +1584,7 @@
 
 			<!-- Category Tabs -->
 			<div class="tab-scroller"
-				style="margin-bottom: 24px; display: flex; gap: 12px; background: #f8fafc; padding: 6px; border-radius: 12px; border: 1px solid #e2e8f0; width: fit-content; flex-wrap: wrap;">
+				style="margin-bottom: 24px; display: flex; gap: 12px; background: transparent; padding: 6px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); width: fit-content; flex-wrap: wrap;">
 				<button id="showAllUsers" class="sub-tab-btn active"
 					style="padding: 10px 20px; border-radius: 8px; border: none; background: #3b82f6; color: white; cursor: pointer; font-weight: 600; transition: all 0.2s;">All
 					Users</button>
@@ -2262,11 +2264,11 @@
 				}
 
 				.provisioning-card {
-					background: #ffffff;
+					background: transparent;
 					border-radius: 12px;
 					padding: 32px;
 					box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-					border: 1px solid #f1f5f9;
+					border: 1px solid rgba(255,255,255,0.15);
 				}
 
 				.provisioning-card h3 {
@@ -2326,10 +2328,10 @@
 				}
 
 				.audit-log-card {
-					background: #ffffff;
+					background: transparent;
 					border-radius: 12px;
 					padding: 24px;
-					border: 1px solid #f1f5f9;
+					border: 1px solid rgba(255,255,255,0.15);
 					box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 				}
 
@@ -2348,7 +2350,7 @@
 				}
 
 				.invite-table th {
-					background: #f8fafc;
+					background: transparent;
 					color: #64748b;
 					font-weight: 600;
 					text-transform: uppercase;
@@ -2356,7 +2358,7 @@
 					font-size: 11px;
 					padding: 12px 16px;
 					text-align: left;
-					border-bottom: 2px solid #f1f5f9;
+					border-bottom: 2px solid rgba(255,255,255,0.15);
 				}
 
 				.invite-table td {
@@ -2498,7 +2500,7 @@
 
 					<!-- Quick Super Admin Creation (No Email Required) -->
 					<div
-						style="margin-top: 2rem; padding: 1.5rem; background: #fef3c7; border: 1px solid #fbbf24; border-radius: 12px;">
+						style="margin-top: 2rem; padding: 1.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;">
 						<h4 style="margin: 0 0 1rem 0; color: #92400e; display: flex; align-items: center; gap: 8px;">
 							🔑 Quick Super Admin Setup
 						</h4>
@@ -2770,17 +2772,34 @@
 			<h2>🎨 My Dashboard Background</h2>
 			<p style="margin-bottom:24px; opacity:0.7;">Set a personal background image for your super admin dashboard.</p>
 
-			<div id="saBgPreviewWrap" style="width:100%; max-width:640px; height:220px; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0; margin-bottom:24px; display:flex; align-items:center; justify-content:center; position:relative; background:#0f172a;">
+			<div id="saBgPreviewWrap" style="width:100%; max-width:640px; height:220px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.2); margin-bottom:24px; display:flex; align-items:center; justify-content:center; position:relative;">
 				<img id="saBgPreviewImg" src="" alt="" style="width:100%; height:100%; object-fit:cover; display:none;" />
 				<span id="saBgPreviewEmpty" style="color:#94a3b8; font-size:14px;">No background set</span>
 			</div>
 
-			<div style="margin-bottom:12px;">
+			<!-- Tab switcher -->
+			<div style="display:flex; gap:0; margin-bottom:18px; border:1.5px solid rgba(255,255,255,0.2); border-radius:10px; overflow:hidden; max-width:360px;">
+				<button id="saBgTabUrl" type="button" style="flex:1; padding:10px; border:none; background:#3b82f6; color:#fff; font-weight:700; font-size:13px; cursor:pointer;">🔗 URL</button>
+				<button id="saBgTabFile" type="button" style="flex:1; padding:10px; border:none; background:rgba(255,255,255,0.08); color:#fff; font-weight:700; font-size:13px; cursor:pointer;">📁 Upload from Device</button>
+			</div>
+
+			<!-- URL panel -->
+			<div id="saBgPanelUrl" style="margin-bottom:12px;">
 				<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Background Image URL</label>
 				<div style="display:flex; gap:8px;">
 					<input id="saBgUrlInput" type="url" placeholder="https://example.com/background.jpg"
-						style="flex:1; padding:12px; border-radius:10px; border:1px solid #cbd5e1; font-size:14px; box-sizing:border-box;" />
-					<button id="saBgPreviewBtn" type="button" style="padding:12px 18px; border-radius:10px; border:1.5px solid #3b82f6; background:transparent; color:#3b82f6; font-weight:700; cursor:pointer; white-space:nowrap;">👁️ Preview</button>
+						style="flex:1; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.25); font-size:14px; box-sizing:border-box; background:rgba(255,255,255,0.1); color:#fff;" />
+					<button id="saBgPreviewBtn" type="button" style="padding:12px 18px; border-radius:10px; border:1.5px solid #3b82f6; background:rgba(59,130,246,0.2); color:#93c5fd; font-weight:700; cursor:pointer; white-space:nowrap;">👁️ Preview</button>
+				</div>
+			</div>
+
+			<!-- File upload panel -->
+			<div id="saBgPanelFile" style="margin-bottom:12px; display:none;">
+				<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Choose an image from your device</label>
+				<input id="saBgFileInput" type="file" accept="image/*" style="position:absolute; opacity:0; pointer-events:none; width:1px; height:1px;" />
+				<div id="saBgFilePickerBtn" style="display:flex; align-items:center; gap:12px; padding:14px 18px; border-radius:10px; border:2px dashed #cbd5e1; cursor:pointer; background:#f8fafc;" onmouseover="this.style.borderColor='#3b82f6'" onmouseout="this.style.borderColor='#cbd5e1'">
+					<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+					<span id="saBgFileName" style="font-size:14px; color:#64748b;">No file chosen — click to browse</span>
 				</div>
 			</div>
 
