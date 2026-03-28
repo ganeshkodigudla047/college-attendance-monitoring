@@ -1,4 +1,5 @@
 import { auth, db } from "./firebase.js";
+import { initAutoLogout } from "./auto-logout.js";
 
 import {
 	onAuthStateChanged,
@@ -1129,7 +1130,7 @@ onAuthStateChanged(auth, async user => {
 		initPresence(user.uid);
 
 		// Auto logout after 10 min idle
-		initAutoLogout();
+		initAutoLogout(() => signOut(auth), 'login.html', 60);
 
 		// Pre-load invite colleges
 		loadInviteColleges();
@@ -7745,52 +7746,5 @@ async function initPresence(uid) {
 }
 
 /* ================= AUTO LOGOUT (10 min idle) ================= */
-const IDLE_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes
-let _idleTimer = null;
-let _idleWarningTimer = null;
-let _idleWarningEl = null;
+// initAutoLogout is imported from auto-logout.js and called directly at line ~1132
 
-function _resetIdleTimer() {
-    clearTimeout(_idleTimer);
-    clearTimeout(_idleWarningTimer);
-    if (_idleWarningEl) { _idleWarningEl.remove(); _idleWarningEl = null; }
-
-    // Warn at 9 min
-    _idleWarningTimer = setTimeout(() => {
-        _idleWarningEl = document.createElement('div');
-        _idleWarningEl.id = 'idleWarning';
-        _idleWarningEl.innerHTML = `
-            <div style="position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
-                background:#1e293b;color:#fff;padding:14px 24px;border-radius:12px;
-                box-shadow:0 8px 32px rgba(0,0,0,0.35);z-index:9999;font-size:14px;
-                display:flex;align-items:center;gap:12px;animation:adFloatIn 0.3s ease;">
-                ⚠️ You'll be logged out in <strong id="idleCountdown">60</strong>s due to inactivity.
-                <button onclick="document.getElementById('idleWarning').remove()" 
-                    style="background:#3b82f6;border:none;color:#fff;padding:6px 14px;
-                    border-radius:8px;cursor:pointer;font-weight:700;">Stay</button>
-            </div>`;
-        document.body.appendChild(_idleWarningEl);
-
-        // Countdown
-        let secs = 60;
-        const cd = setInterval(() => {
-            secs--;
-            const el = document.getElementById('idleCountdown');
-            if (el) el.textContent = secs;
-            if (secs <= 0) clearInterval(cd);
-        }, 1000);
-    }, IDLE_TIMEOUT_MS - 60 * 1000);
-
-    // Logout at 10 min
-    _idleTimer = setTimeout(async () => {
-        try { await signOut(auth); } catch (e) {}
-        window.location.href = 'login.html';
-    }, IDLE_TIMEOUT_MS);
-}
-
-function initAutoLogout() {
-    ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(evt => {
-        document.addEventListener(evt, _resetIdleTimer, { passive: true });
-    });
-    _resetIdleTimer();
-}

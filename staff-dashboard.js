@@ -1,5 +1,6 @@
 import { auth, db } from "./firebase.js";
 import { loadAndApplyBackground } from "./college-background.js";
+import { initAutoLogout } from "./auto-logout.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import {
   collection, getDocs, getDoc, doc, updateDoc, addDoc, query, where, onSnapshot, serverTimestamp
@@ -539,6 +540,7 @@ onAuthStateChanged(auth, async user => {
 
     // Hide loading screen — data is ready
     window.hideLoading();
+    initAutoLogout(() => signOut(auth), 'login.html', 60);
 
   } catch (err) {
     console.error("Dashboard Init Error:", err);
@@ -2954,3 +2956,4 @@ window.requestAdminPermission = function () {
     alert("Permission request function not available. Please refresh the page.");
   }
 };
+

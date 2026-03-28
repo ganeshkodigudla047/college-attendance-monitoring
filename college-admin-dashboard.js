@@ -1,5 +1,6 @@
 import { auth, db } from "./firebase.js";
 import { loadAndApplyBackground, saveCollegeBackground, deleteCollegeBackground } from "./college-background.js";
+import { initAutoLogout } from "./auto-logout.js";
 
 import {
 	onAuthStateChanged,
@@ -1002,6 +1003,7 @@ onAuthStateChanged(auth, async user => {
 	]);
 
 	hideLoading();
+	initAutoLogout(() => signOut(auth), 'login.html', 60);
 	setTimeout(initAllCustomSelects, 300);
 
 	// Initialize email approval service (non-blocking)
@@ -5359,3 +5361,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(initAllCustomSelects, 800);
 });
 window.initAllCustomSelects = initAllCustomSelects;
+
