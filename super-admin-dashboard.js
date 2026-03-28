@@ -1656,7 +1656,7 @@ function getAuditLoadingMarkup(message = "Loading attendance audit for all colle
 	return `
 		<tr>
 			<td colspan="7" style="padding: 24px;">
-				<div style="display:flex; align-items:center; justify-content:center; gap:14px; padding:18px; border-radius:14px; background:linear-gradient(135deg, #eff6ff, #f8fafc); border:1px solid #dbeafe;">
+				<div style="display:flex; align-items:center; justify-content:center; gap:14px; padding:18px; border-radius:14px; background:transparent; border:1px solid rgba(255,255,255,0.15);">
 					<div style="width:18px; height:18px; border:3px solid #bfdbfe; border-top-color:#2563eb; border-radius:50%; animation: spin 0.8s linear infinite;"></div>
 					<div style="text-align:left;">
 						<div style="font-weight:700; color:#1e3a8a;">${escapeHtml(message)}</div>
@@ -1841,7 +1841,7 @@ async function loadAttendanceAudit() {
 			attendanceAuditBody.innerHTML = `
 				<tr>
 					<td colspan="7" style="padding: 24px;">
-						<div style="text-align:center; padding:20px; border-radius:14px; background:#f8fafc; border:1px solid #e2e8f0; color:#64748b; font-weight:600;">
+						<div style="text-align:center; padding:20px; border-radius:14px; background:transparent; border:1px solid rgba(255,255,255,0.15); color:#64748b; font-weight:600;">
 							No college data available for the current session.
 						</div>
 					</td>
@@ -2820,7 +2820,7 @@ window.openUserDetails = async uid => {
 		let photo = user.photoURL || "default-avatar.png";
 
 		let infoHtml = `
-			<div style="background: white; border-radius: 20px; padding: 40px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 0, 0, 0.05);">
+			<div style="border-radius: 20px; padding: 40px; border: 1px solid rgba(255,255,255,0.15);">
 				<div style="display: flex; gap: 30px; align-items: start; flex-wrap: wrap;">
 					<img src="${photo}" style="width:140px; height:140px; border-radius:16px; object-fit:cover; border: 4px solid #f1f5f9; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
 					<div style="flex: 1; min-width: 250px;">

@@ -318,13 +318,15 @@ function _detectBrightnessNoCORS(imageUrl, resolve) {
 function _stripInlineBackgrounds() {
     document.querySelectorAll(TRANSPARENT_SELECTORS).forEach(el => {
         if (el.closest('.custom-select-wrap')) return;
+        if (el.classList.contains('cs-wrap') || el.classList.contains('cs-trigger') || el.classList.contains('cs-dropdown') || el.classList.contains('cs-option')) return;
         el.style.removeProperty('background');
         el.style.removeProperty('background-color');
         el.style.removeProperty('background-image');
         el.style.removeProperty('box-shadow');
     });
-    // Strip ALL inline backgrounds from every element on the page
-    document.querySelectorAll('*').forEach(el => {
+    // Strip inline backgrounds from section children only
+    document.querySelectorAll('.section *, .page *').forEach(el => {
+        if (el.classList.contains('cs-wrap') || el.classList.contains('cs-trigger') || el.classList.contains('cs-dropdown') || el.classList.contains('cs-option')) return;
         if (el.closest('.custom-select-wrap')) return;
         if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'OPTION' || el.tagName === 'TEXTAREA') return;
         if (el.id === 'loadingScreen' || el.closest('#loadingScreen')) return;
@@ -341,8 +343,9 @@ function _startObserver() {
     if (_bgObserver) return;
     _bgObserver = new MutationObserver(() => {
         _stripInlineBackgrounds();
-        // Re-apply dark color-scheme to any newly added selects
-        document.querySelectorAll('select').forEach(s => { s.style.colorScheme = 'dark'; });
+        // Replace any new native selects with custom ones (debounced)
+        clearTimeout(_bgObserver._csTimer);
+        _bgObserver._csTimer = setTimeout(() => _initCustomSelects(), 200);
     });
     _bgObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
 }
@@ -366,32 +369,68 @@ function _buildCSS(imageUrl, isDark) {
             background-repeat: no-repeat !important;
         }
 
-        /* ── KILL ALL BLUR globally — restore only for overlays/modals ── */
-        body.has-bg *:not(.overlay):not(.modal):not(#loadingScreen):not(.loading-overlay) {
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-        }
-        /* Restore blur for overlays and modals only */
-        body.has-bg .overlay { backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; }
-        body.has-bg .modal   { backdrop-filter: blur(24px) !important; -webkit-backdrop-filter: blur(24px) !important; }
-
-        /* ── HEADER & SIDEBAR: fully transparent ── */
-        .header, .sidebar, .sidebar-footer,
-        .nav-item, .sidebar-nav, .sidebar-menu,
-        .nav-link, .menu-item, .submenu,
-        .header-clock, .notification, .logout-btn,
-        .header-right > *, .sidebar li, .sidebar li.active,
-        .sidebar-brand, .sidebar-footer * {
+        /* ── MAKE ALL CONTENT TRANSPARENT ── */
+        body.has-bg .page, body.has-bg .section, body.has-bg .page.section,
+        body.has-bg .main, body.has-bg .sidebar, body.has-bg .sidebar-footer,
+        body.has-bg .header,
+        body.has-bg .header-clock, body.has-bg .notification, body.has-bg .logout-btn,
+        body.has-bg .submenu, body.has-bg .nav-item, body.has-bg .menu-item,
+        body.has-bg .card, body.has-bg .stat-card, body.has-bg .sa-stat-card,
+        body.has-bg .sa-card, body.has-bg .sa-activity-card, body.has-bg .sa-attention,
+        body.has-bg .status-box, body.has-bg .admin-settings-box, body.has-bg .session-card,
+        body.has-bg .admin-setting-item, body.has-bg .profile-info-item-v2,
+        body.has-bg .controls-bar, body.has-bg .admin-controls, body.has-bg .tab-scroller,
+        body.has-bg .table-wrap, body.has-bg .table-responsive,
+        body.has-bg .provisioning-card, body.has-bg .audit-log-card,
+        body.has-bg .admin-card, body.has-bg .college-card, body.has-bg .user-card,
+        body.has-bg .sa-info-row, body.has-bg .sa-config-item, body.has-bg .sa-status-badge,
+        body.has-bg .sa-calendar, body.has-bg .sa-pending-item, body.has-bg .sa-attention-list li,
+        body.has-bg .sa-greeting, body.has-bg .greeting-container,
+        body.has-bg .profile-card-v2, body.has-bg .profile-container-premium,
+        body.has-bg .profile-sidebar, body.has-bg .profile-main, body.has-bg .profile-content-v2,
+        body.has-bg .admin-profile-shell, body.has-bg .admin-profile-hero, body.has-bg .admin-profile-body,
+        body.has-bg .step-box, body.has-bg .status-message, body.has-bg .greeting-block,
+        body.has-bg table, body.has-bg td,
+        body.has-bg .bg-audit-card, body.has-bg .notify-header,
+        body.has-bg .home-session-box, body.has-bg .mark-session-box, body.has-bg .attendance-box {
             background: transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
+        }
+        /* custom select blur */
+        body.has-bg .cs-trigger {
+            background: rgba(255,255,255,0.12) !important;
+            backdrop-filter: blur(10px) !important;
+            -webkit-backdrop-filter: blur(10px) !important;
+            border: 1px solid rgba(255,255,255,0.3) !important;
             box-shadow: none !important;
-            border-color: transparent !important;
+        }
+        body.has-bg .cs-trigger:hover {
+            background: rgba(255,255,255,0.22) !important;
+        }
+        body.has-bg .cs-dropdown {
+            background: rgba(15,23,42,0.6) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255,255,255,0.2) !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+        }
+        body.has-bg .cs-option {
+            background: transparent !important;
+            color: rgba(255,255,255,0.9) !important;
+        }
+        body.has-bg .cs-option:hover {
+            background: rgba(255,255,255,0.18) !important;
+            color: #fff !important;
+        }
+        body.has-bg .cs-option.selected {
+            background: rgba(59,130,246,0.4) !important;
+            color: #93c5fd !important;
         }
 
-        /* ── HEADER: hide content scrolling behind it ── */
-        /* Use the same background image on the header so it looks transparent
-           but actually clips content scrolling underneath */
+        /* ── HEADER: restore background image trick ── */
         .header {
             background-image: url("${imageUrl}") !important;
             background-size: cover !important;
@@ -400,80 +439,110 @@ function _buildCSS(imageUrl, isDark) {
             background-repeat: no-repeat !important;
         }
 
-        /* ── ALL CONTENT BOXES: fully transparent ── */
-        .page.section, .section, .page,
-        #home, #homePage,
-        .status-box, .admin-settings-box,
-        .home-session-box, .mark-session-box, .attendance-box,
-        .profile-card-v2,
-        .profile-container-premium, .profile-sidebar, .profile-main,
-        .profile-content-v2, .card, .stat-card, .sa-stat-card,
-        .sa-card, .sa-activity-card, .sa-attention, .greeting-block,
-        .admin-profile-shell, .admin-profile-hero, .admin-profile-body,
-        .session-card, .admin-setting-item, .profile-info-item-v2,
-        .admin-profile-field, .status-message, .step-box,
-        .sa-info-row, .sa-config-item, .profile-detail-item,
-        .notify-list, .notify-header,
-        .controls-bar, .admin-controls, .tab-scroller,
-        .table-wrap, .table-responsive,
-        .provisioning-card, .audit-log-card, .bg-audit-card,
-        .admin-card, .college-card, .user-card,
-        .access-management-container > div,
-        [style*="background: #f8fafc"], [style*="background:#f8fafc"],
-        [style*="background: white"], [style*="background:white"],
-        [style*="background: #ffffff"], [style*="background:#ffffff"],
-        [style*="background: #fef3c7"], [style*="background:#fef3c7"] {
-            background: transparent !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
+        /* ── BUTTONS: transparent glass style ── */
+        body.has-bg button {
+            background: rgba(255,255,255,0.1) !important;
+            border-color: rgba(255,255,255,0.2) !important;
+            color: #fff !important;
+            text-shadow: none !important;
             box-shadow: none !important;
         }
-        /* Restore visible borders on content boxes after transparent rule */
-        .card, .stat-card, .sa-stat-card, .sa-card,
-        .status-box, .session-card, .admin-setting-item,
-        .profile-info-item-v2, .sa-info-row, .sa-config-item,
-        .profile-detail-item, .admin-settings-box,
-        .home-session-box, .mark-session-box, .attendance-box {
-            border: 1px solid ${borderColor} !important;
+        body.has-bg button:hover {
+            background: rgba(255,255,255,0.2) !important;
+        }
+        /* Specific button colors */
+        body.has-bg #approveSelected,
+        body.has-bg #saBgSaveBtn,
+        body.has-bg button[style*="background:#3b82f6"],
+        body.has-bg button[style*="background: #3b82f6"],
+        body.has-bg button[style*="background: #2563eb"],
+        body.has-bg button[style*="background:#2563eb"],
+        body.has-bg .btn-primary { background: #3b82f6 !important; border-color: #2563eb !important; color: #fff !important; }
+        body.has-bg #rejectSelected,
+        body.has-bg button[style*="background:#dc2626"],
+        body.has-bg button[style*="background: #dc2626"],
+        body.has-bg button[style*="background:#ef4444"],
+        body.has-bg button[style*="background: #ef4444"],
+        body.has-bg .btn-danger { background: #dc2626 !important; border-color: #b91c1c !important; color: #fff !important; }
+        body.has-bg button[style*="background:#10b981"],
+        body.has-bg button[style*="background: #10b981"] { background: #10b981 !important; color: #fff !important; }
+        body.has-bg button[style*="background:#d97706"],
+        body.has-bg button[style*="background: #d97706"] { background: #d97706 !important; color: #fff !important; }
+        body.has-bg .menu-btn { background: #3b82f6 !important; }
+        body.has-bg #saBgTabUrl { background: #3b82f6 !important; }
+
+        /* ── INPUTS / SELECTS: glass style ── */
+        body.has-bg input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+        body.has-bg select,
+        body.has-bg textarea {
+            background: rgba(255,255,255,0.12) !important;
+            color: #fff !important;
+            border: 1px solid rgba(255,255,255,0.25) !important;
+            text-shadow: none !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+        }
+        body.has-bg input:focus,
+        body.has-bg select:focus,
+        body.has-bg textarea:focus {
+            background: rgba(255,255,255,0.18) !important;
+            border-color: rgba(255,255,255,0.5) !important;
+            outline: none !important;
+        }
+        body.has-bg input::placeholder,
+        body.has-bg textarea::placeholder { color: rgba(255,255,255,0.45) !important; }
+        body.has-bg select { color-scheme: dark; }
+        body.has-bg select option { background: rgba(15,23,42,0.92) !important; color: #f1f5f9 !important; }
+        body.has-bg select option:hover,
+        body.has-bg select option:focus { background: rgba(255,255,255,0.25) !important; color: #fff !important; }
+        body.has-bg select option:checked { background: #3b82f6 !important; color: #fff !important; }
+
+        /* ── NOTIFICATION BADGE ── */
+        body.has-bg .notification-badge { background: #ef4444 !important; }
+
+        /* ── LOADING SCREEN ── */
+        body.has-bg #loadingScreen,
+        body.has-bg .loading-overlay { background: rgba(15,23,42,0.95) !important; }
+
+        /* ── MODAL / OVERLAY ── */
+        body.has-bg .modal-overlay,
+        body.has-bg .overlay,
+        body.has-bg #logoutOverlay { background: rgba(0,0,0,0.6) !important; }
+        body.has-bg .modal-card,
+        body.has-bg .modal { background: rgba(15,23,42,0.95) !important; }
+
+        /* ── NOTIFY LIST ── */
+        body.has-bg .notify-list { background: rgba(15,23,42,0.92) !important; }
+        body.has-bg .notify-item:hover { background: rgba(255,255,255,0.1) !important; }
+
+        /* ── SIDEBAR ACTIVE / HOVER ── */
+        body.has-bg .sidebar li.active { background: rgba(59,130,246,0.25) !important; border-radius: 8px; }
+        body.has-bg .sidebar li:hover  { background: rgba(255,255,255,0.08) !important; border-radius: 8px; }
+
+        /* ── TABLE HEADERS ── */
+        body.has-bg th { background: rgba(15,23,42,0.6) !important; color: rgba(255,255,255,0.85) !important; border-bottom: 2px solid rgba(255,255,255,0.15) !important; }
+
+        /* ── TABLE ROW HOVER ── */
+        body.has-bg tbody tr:hover { background: rgba(255,255,255,0.1) !important; cursor: pointer; }
+
+        /* ── STATUS BADGES ── */
+        body.has-bg .status-registered { background: rgba(16,185,129,0.25) !important; color: #6ee7b7 !important; }
+        body.has-bg .status-pending    { background: rgba(245,158,11,0.25) !important;  color: #fcd34d !important; }
+        body.has-bg .status-expired    { background: rgba(239,68,68,0.25) !important;   color: #fca5a5 !important; }
+
+        /* ── CARD HOVER ── */
+        body.has-bg .card:hover, body.has-bg .stat-card:hover,
+        body.has-bg .sa-stat-card:hover, body.has-bg .sa-card:hover,
+        body.has-bg .sa-activity-card:hover, body.has-bg .session-card:hover,
+        body.has-bg .admin-card:hover, body.has-bg .college-card:hover,
+        body.has-bg .user-card:hover {
+            background: rgba(255,255,255,0.1) !important;
+            transform: translateY(-3px);
         }
 
-        /* ── TABLE: glass effect when background is present ── */
-        .table-container, .records-container {
-            background: rgba(255,255,255,0.08) !important;
-            backdrop-filter: blur(16px) !important;
-            -webkit-backdrop-filter: blur(16px) !important;
-            border: 1px solid rgba(255,255,255,0.15) !important;
-            box-shadow: none !important;
-        }
-        table, .records-fixed-table { background: transparent !important; }
-        th, .records-fixed-table thead th {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: transparent !important;
-            color: rgba(255,255,255,0.85) !important;
-            border-bottom: 2px solid rgba(255,255,255,0.15) !important;
-            backdrop-filter: none !important;
-            white-space: nowrap;
-        }
-        td, .records-fixed-table td {
-            color: ${textColor} !important;
-            border-bottom: 1px solid ${borderColor} !important;
-            background: transparent !important;
-            white-space: nowrap;
-        }
-
-        /* ── TABLE ROW HOVER HIGHLIGHT ── */
-        body.has-bg tbody tr:hover {
-            background: ${isDark ? "rgba(255,255,255,0.14)" : "rgba(0,0,0,0.08)"} !important;
-            cursor: pointer;
-        }
-
-        /* ── TEXT COLORS: high specificity with body.has-bg prefix ── */
+        /* ── TEXT COLORS ── */
         body.has-bg,
-        body.has-bg .main, body.has-bg .main-content,
-        body.has-bg .section *, body.has-bg .page *,
-        body.has-bg #home *, body.has-bg #homePage *,
+        body.has-bg .main, body.has-bg .section *,
         body.has-bg h1, body.has-bg h2, body.has-bg h3,
         body.has-bg h4, body.has-bg h5, body.has-bg h6,
         body.has-bg p, body.has-bg span, body.has-bg label,
@@ -481,139 +550,37 @@ function _buildCSS(imageUrl, isDark) {
             color: ${textColor} !important;
             text-shadow: ${textShadow} !important;
         }
-        /* Exclude dropdown panels from text color override */
-        body.has-bg .custom-select-panel,
-        body.has-bg .custom-select-panel *,
-        body.has-bg .custom-select-option {
-            color: rgba(255,255,255,0.85) !important;
+        body.has-bg button, body.has-bg input, body.has-bg select, body.has-bg textarea {
             text-shadow: none !important;
         }
-        body.has-bg .custom-select-option:hover {
-            color: #fff !important;
-            background: rgba(255,255,255,0.18) !important;
+        body.has-bg .muted, body.has-bg .text-muted {
+            color: ${textMuted} !important;
         }
-        body.has-bg .custom-select-option.selected {
-            color: #93c5fd !important;
-            background: rgba(59,130,246,0.4) !important;
+
+        /* ── BORDERS ── */
+        body.has-bg td { border-bottom: 1px solid ${borderColor} !important; color: ${textColor} !important; }
+        body.has-bg .card, body.has-bg .stat-card, body.has-bg .sa-stat-card,
+        body.has-bg .admin-card, body.has-bg .college-card, body.has-bg .user-card {
+            border: 1px solid ${borderColor} !important;
         }
-        body.has-bg .custom-select-option.selected:hover {
-            color: #fff !important;
-            background: rgba(59,130,246,0.55) !important;
-        }
-        /* Custom select trigger adapts to bg brightness */
+
+        /* ── CUSTOM SELECT ── */
         body.has-bg .custom-select-trigger {
             background: rgba(255,255,255,0.15) !important;
             border-color: rgba(255,255,255,0.25) !important;
             color: ${textColor} !important;
-            text-shadow: none !important;
         }
-        body.has-bg .muted, body.has-bg .text-muted,
-        body.has-bg .subtitle, body.has-bg .section-subtext,
-        body.has-bg .profile-info-label, body.has-bg .sa-stat-label,
-        body.has-bg .stat-label {
-            color: ${textMuted} !important;
-            text-shadow: ${textShadow} !important;
-        }
-        /* Borders — all visible containers */
-        body.has-bg .card, body.has-bg .stat-card,
-        body.has-bg .sa-stat-card, body.has-bg .sa-card,
-        body.has-bg .status-box, body.has-bg .admin-settings-box,
-        body.has-bg .session-card, body.has-bg .admin-setting-item,
-        body.has-bg .profile-info-item-v2,
-        body.has-bg .table-wrap, body.has-bg .table-responsive,
-        body.has-bg .table-container, body.has-bg .records-container,
-        body.has-bg .controls-bar, body.has-bg .admin-controls,
-        body.has-bg .section > div, body.has-bg .page > div,
-        body.has-bg [style*="border"],
-        body.has-bg td, body.has-bg th {
-            border-color: ${borderColor} !important;
-        }
-        /* Inputs always readable */
-        body.has-bg input:not(.records-select),
-        body.has-bg select:not(.records-select),
-        body.has-bg textarea {
-            color: #0f172a !important;
-            background: rgba(255,255,255,0.88) !important;
-            text-shadow: none !important;
-        }
-        /* Filter bars */
-        body.has-bg .controls-bar input, body.has-bg .controls-bar select,
-        body.has-bg .admin-controls input, body.has-bg .admin-controls select,
-        body.has-bg .records-select {
-            background: rgba(255,255,255,0.15) !important;
-            color: #fff !important;
-            border: 1px solid rgba(255,255,255,0.3) !important;
-            text-shadow: none !important;
-            color-scheme: dark;
-        }
-        body.has-bg .controls-bar input::placeholder,
-        body.has-bg .admin-controls input::placeholder {
-            color: rgba(255,255,255,0.5) !important;
-        }
-        /* ALL selects get dark color-scheme */
-        body.has-bg select { color-scheme: dark; }
-        body.has-bg select option { background: #1e293b !important; color: #f1f5f9 !important; }
-        /* Buttons keep their own colors */
-        body.has-bg button, body.has-bg .btn, body.has-bg [class*="btn"] {
-            text-shadow: none !important;
-        }
-        /* ── CARD HOVER — must come last to beat box-shadow:none above ── */
-        body.has-bg .card,
-        body.has-bg .stat-card,
-        body.has-bg .sa-stat-card,
-        body.has-bg .sa-card,
-        body.has-bg .sa-activity-card,
-        body.has-bg .sa-attention,
-        body.has-bg .session-card,
-        body.has-bg .status-box,
-        body.has-bg .admin-settings-box,
-        body.has-bg .admin-setting-item,
-        body.has-bg .profile-info-item-v2 {
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease !important;
-            cursor: default;
-        }
-        body.has-bg .card:hover,
-        body.has-bg .stat-card:hover,
-        body.has-bg .sa-stat-card:hover,
-        body.has-bg .sa-card:hover,
-        body.has-bg .sa-activity-card:hover,
-        body.has-bg .sa-attention:hover,
-        body.has-bg .session-card:hover,
-        body.has-bg .status-box:hover,
-        body.has-bg .admin-settings-box:hover,
-        body.has-bg .admin-setting-item:hover,
-        body.has-bg .profile-info-item-v2:hover {
-            transform: translateY(-4px) !important;
-            box-shadow: 0 12px 36px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.18) !important;
-            background: rgba(255,255,255,0.13) !important;
-        }
+        body.has-bg .custom-select-option { color: rgba(255,255,255,0.85) !important; }
+        body.has-bg .custom-select-option:hover { background: rgba(255,255,255,0.18) !important; }
+        body.has-bg .custom-select-option.selected { background: rgba(59,130,246,0.4) !important; color: #93c5fd !important; }
 
-        /* ── FORCE TRANSPARENT on elements with hardcoded backgrounds ── */
-        body.has-bg .sa-greeting,
-        body.has-bg .greeting-container {
-            background: transparent !important;
-            box-shadow: none !important;
-        }
-        body.has-bg .sa-attention-list li,
-        body.has-bg .sa-pending-item,
-        body.has-bg .sa-pending-breakdown li,
-        body.has-bg .sa-info-row,
-        body.has-bg .sa-config-item,
-        body.has-bg .sa-status-badge,
-        body.has-bg .sa-calendar {
+        /* ── SA HOME SPECIFIC ── */
+        body.has-bg .sa-greeting, body.has-bg .greeting-container { background: transparent !important; }
+        body.has-bg .sa-attention-list li, body.has-bg .sa-pending-item,
+        body.has-bg .sa-info-row, body.has-bg .sa-config-item,
+        body.has-bg .sa-status-badge, body.has-bg .sa-calendar {
             background: transparent !important;
             border-color: ${borderColor} !important;
-        }
-        body.has-bg .sa-colleges-table th,
-        body.has-bg .sa-activity-table thead,
-        body.has-bg .sa-activity-table thead th {
-            background: rgba(15,23,42,0.6) !important;
-            color: rgba(255,255,255,0.8) !important;
-            border-color: ${borderColor} !important;
-        }
-        body.has-bg .sa-activity-table tbody tr:hover,
-        body.has-bg .sa-colleges-table tbody tr:hover {
-            background: rgba(255,255,255,0.1) !important;
         }
         body.has-bg .sa-activity-actions button {
             background: rgba(255,255,255,0.12) !important;
@@ -627,12 +594,6 @@ function _buildCSS(imageUrl, isDark) {
         body.has-bg .sa-empty-state {
             background: rgba(255,255,255,0.08) !important;
             border-color: ${borderColor} !important;
-        }
-        body.has-bg .sa-config-item .badge,
-        body.has-bg .sa-colleges-table .badge.ok,
-        body.has-bg .sa-colleges-table .badge.warn {
-            background: rgba(255,255,255,0.15) !important;
-            color: ${textColor} !important;
         }
     `;
 }
@@ -659,8 +620,8 @@ export async function applyCollegeBackground(imageUrl) {
     document.body.classList.add("has-bg");
     _stripInlineBackgrounds();
     _startObserver();
-    // Apply dark color-scheme to ALL selects so OS dropdown popup renders dark
-    document.querySelectorAll('select').forEach(s => { s.style.colorScheme = 'dark'; });
+    // Replace native selects with custom styled ones
+    _initCustomSelects();
 
     try { sessionStorage.setItem("collegeBgUrl", imageUrl); } catch (_) {}
 
@@ -671,7 +632,8 @@ export async function applyCollegeBackground(imageUrl) {
     document.head.appendChild(styleEl);
     styleEl.textContent = _buildCSS(imageUrl, isDark);
     _stripInlineBackgrounds();
-
+    // Re-init custom selects for any dynamically added ones
+    _initCustomSelects();
     try { sessionStorage.setItem("collegeBgBrightness", brightness); } catch (_) {}
 
     // Start per-element adaptive color detection
@@ -756,6 +718,7 @@ export function removeCollegeBackground() {
     document.body.classList.remove("has-bg");
     _stopObserver();
     _stopAdaptive();
+    _destroyCustomSelects();
     // Restore default color-scheme on all selects
     document.querySelectorAll('select').forEach(s => { s.style.colorScheme = ''; });
     try { sessionStorage.removeItem("collegeBgUrl"); } catch (_) {}
@@ -786,3 +749,230 @@ export async function deleteCollegeBackground(collegeId) {
     await updateDoc(doc(db, "colleges", collegeId), { backgroundImage: null });
     removeCollegeBackground();
 }
+
+/* ============================================================
+   CUSTOM SELECT — replaces native <select> when bg is active
+   ============================================================ */
+
+const CS_STYLE_ID = 'custom-select-bg-style';
+
+function _injectCustomSelectStyle() {
+    // Remove and re-append so it always comes AFTER the bg style tag (wins cascade)
+    const existing = document.getElementById(CS_STYLE_ID);
+    if (existing) existing.remove();
+    const s = document.createElement('style');
+    s.id = CS_STYLE_ID;
+    s.textContent = `
+        .cs-wrap {
+            position: relative;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .cs-trigger {
+            display: flex !important;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 9px 14px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.3) !important;
+            background: rgba(255,255,255,0.15) !important;
+            background-color: rgba(255,255,255,0.15) !important;
+            backdrop-filter: blur(14px) !important;
+            -webkit-backdrop-filter: blur(14px) !important;
+            color: #fff !important;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            transition: background 0.15s, border-color 0.15s;
+            box-sizing: border-box;
+            width: 100%;
+            min-width: 100px;
+            box-shadow: none !important;
+        }
+        .cs-trigger:hover {
+            background: rgba(255,255,255,0.25) !important;
+            background-color: rgba(255,255,255,0.25) !important;
+            border-color: rgba(255,255,255,0.55) !important;
+        }
+        .cs-arrow {
+            font-size: 10px;
+            opacity: 0.7;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+            color: #fff !important;
+        }
+        .cs-wrap.open .cs-arrow { transform: rotate(180deg); }
+        .cs-dropdown {
+            display: none !important;
+            position: absolute !important;
+            top: calc(100% + 4px) !important;
+            left: 0 !important;
+            min-width: 100% !important;
+            z-index: 99999 !important;
+            border-radius: 10px !important;
+            border: 1px solid rgba(255,255,255,0.25) !important;
+            background: rgba(10,15,30,0.85) !important;
+            background-color: rgba(10,15,30,0.85) !important;
+            backdrop-filter: blur(24px) !important;
+            -webkit-backdrop-filter: blur(24px) !important;
+            overflow: hidden !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+            max-height: 260px !important;
+            overflow-y: auto !important;
+        }
+        .cs-wrap.open .cs-dropdown { display: block !important; }
+        .cs-option {
+            padding: 10px 16px !important;
+            color: rgba(255,255,255,0.9) !important;
+            cursor: pointer !important;
+            white-space: nowrap !important;
+            transition: background 0.12s !important;
+            font-size: 14px !important;
+            background: transparent !important;
+            background-color: transparent !important;
+        }
+        .cs-option:hover {
+            background: rgba(255,255,255,0.18) !important;
+            background-color: rgba(255,255,255,0.18) !important;
+            color: #fff !important;
+        }
+        .cs-option.selected {
+            background: rgba(59,130,246,0.4) !important;
+            background-color: rgba(59,130,246,0.4) !important;
+            color: #93c5fd !important;
+            font-weight: 600 !important;
+        }
+        .cs-option.selected:hover {
+            background: rgba(59,130,246,0.6) !important;
+            background-color: rgba(59,130,246,0.6) !important;
+            color: #fff !important;
+        }
+    `;
+    document.head.appendChild(s);
+}
+
+function _removeCustomSelectStyle() {
+    const s = document.getElementById(CS_STYLE_ID);
+    if (s) s.remove();
+}
+
+function _buildCustomSelect(nativeSelect) {
+    if (nativeSelect.dataset.csReplaced) return;
+    nativeSelect.dataset.csReplaced = '1';
+
+    // Hide native select but keep it in DOM for form/JS compatibility
+    nativeSelect.style.cssText = 'position:absolute;opacity:0;pointer-events:none;width:1px;height:1px;';
+
+    const wrap = document.createElement('div');
+    wrap.className = 'cs-wrap';
+
+    const trigger = document.createElement('div');
+    trigger.className = 'cs-trigger';
+
+    const label = document.createElement('span');
+    label.className = 'cs-label';
+
+    const arrow = document.createElement('span');
+    arrow.className = 'cs-arrow';
+    arrow.textContent = '▼';
+
+    trigger.appendChild(label);
+    trigger.appendChild(arrow);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'cs-dropdown';
+
+    function syncLabel() {
+        const sel = nativeSelect.options[nativeSelect.selectedIndex];
+        label.textContent = sel ? sel.text : '';
+    }
+
+    function buildOptions() {
+        dropdown.innerHTML = '';
+        Array.from(nativeSelect.options).forEach((opt, i) => {
+            const item = document.createElement('div');
+            item.className = 'cs-option' + (i === nativeSelect.selectedIndex ? ' selected' : '');
+            item.textContent = opt.text;
+            item.dataset.value = opt.value;
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                nativeSelect.value = opt.value;
+                nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                syncLabel();
+                dropdown.querySelectorAll('.cs-option').forEach(o => o.classList.remove('selected'));
+                item.classList.add('selected');
+                wrap.classList.remove('open');
+            });
+            dropdown.appendChild(item);
+        });
+        syncLabel();
+    }
+
+    // Watch for options being added/changed (e.g. JS populates the select later)
+    const nativeObserver = new MutationObserver(() => buildOptions());
+    nativeObserver.observe(nativeSelect, { childList: true, subtree: true, attributes: true });
+    nativeSelect._csObserver = nativeObserver;
+
+    // Sync on programmatic value change
+    nativeSelect.addEventListener('change', () => {
+        syncLabel();
+        dropdown.querySelectorAll('.cs-option').forEach((o, i) => {
+            o.classList.toggle('selected', i === nativeSelect.selectedIndex);
+        });
+    });
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Rebuild options fresh every open (catches dynamic updates)
+        buildOptions();
+        const isOpen = wrap.classList.contains('open');
+        document.querySelectorAll('.cs-wrap.open').forEach(w => w.classList.remove('open'));
+        if (!isOpen) wrap.classList.add('open');
+    });
+
+    wrap.appendChild(trigger);
+    wrap.appendChild(dropdown);
+    nativeSelect.parentNode.insertBefore(wrap, nativeSelect);
+    wrap.appendChild(nativeSelect);
+
+    nativeSelect._csWrap = wrap;
+    buildOptions();
+}
+
+function _destroyCustomSelect(nativeSelect) {
+    if (!nativeSelect.dataset.csReplaced) return;
+    delete nativeSelect.dataset.csReplaced;
+    if (nativeSelect._csObserver) { nativeSelect._csObserver.disconnect(); delete nativeSelect._csObserver; }
+    const wrap = nativeSelect._csWrap;
+    if (wrap && wrap.parentNode) {
+        wrap.parentNode.insertBefore(nativeSelect, wrap);
+        wrap.remove();
+    }
+    nativeSelect.style.cssText = '';
+    delete nativeSelect._csWrap;
+}
+
+function _initCustomSelects() {
+    _injectCustomSelectStyle();
+    if (_bgObserver) _bgObserver.disconnect();
+    document.querySelectorAll('select').forEach(s => {
+        if (s.closest('.custom-select-wrap')) return;
+        if (s.dataset.csReplaced) return;
+        _buildCustomSelect(s);
+    });
+    if (_bgObserver) {
+        _bgObserver.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    }
+}
+
+function _destroyCustomSelects() {
+    document.querySelectorAll('select[data-cs-replaced]').forEach(s => _destroyCustomSelect(s));
+    _removeCustomSelectStyle();
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.cs-wrap.open').forEach(w => w.classList.remove('open'));
+});
