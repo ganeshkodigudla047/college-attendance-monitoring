@@ -3507,144 +3507,116 @@ if (loadCurrentAcademicYear) {
 // Load attendance statistics
 async function loadAttendanceStatistics() {
 	try {
-		if (!daysCountTable) {
-			console.error('daysCountTable element not found');
-			return;
-		}
+		if (!daysCountTable) return;
 
-		if (!statsStartDate || !statsEndDate) {
-			console.error('Date input elements not found');
-			safeSet(daysCountTable, '<tr><td colspan="6" style="text-align:center;">Error: Date inputs not found</td></tr>', 'html');
-			return;
-		}
+		let startDate = statsStartDate?.value;
+		let endDate   = statsEndDate?.value;
 
-		let startDate = statsStartDate.value;
-		let endDate = statsEndDate.value;
-
-		// Default to current academic year if not set
 		if (!startDate || !endDate) {
-			const academicYearDoc = await getDoc(getAcademicYearDocRef(currentCollegeId));
-			if (academicYearDoc.exists()) {
-				const ayData = academicYearDoc.data();
-				startDate = ayData.startDate;
-				endDate = new Date().toISOString().split('T')[0]; // Upto today
-				statsStartDate.value = startDate;
-				statsEndDate.value = endDate;
+			const ayDoc = await getDoc(getAcademicYearDocRef(currentCollegeId));
+			if (ayDoc.exists()) {
+				const ay = ayDoc.data();
+				startDate = ay.startDate;
+				endDate   = new Date().toISOString().split('T')[0];
+				if (statsStartDate) statsStartDate.value = startDate;
+				if (statsEndDate)   statsEndDate.value   = endDate;
 			}
 		}
 
 		if (!startDate || !endDate) {
-			safeSet(daysCountTable, '<tr><td colspan="8" style="text-align:center;">Please select both start and end dates</td></tr>', 'html');
+			safeSet(daysCountTable, '<tr><td colspan="5" style="text-align:center;">Please select both start and end dates</td></tr>', 'html');
 			return;
 		}
-
-
 		if (startDate > endDate) {
-			safeSet(daysCountTable, '<tr><td colspan="8" style="text-align:center;">Start date must be before end date</td></tr>', 'html');
+			safeSet(daysCountTable, '<tr><td colspan="5" style="text-align:center;">Start date must be before end date</td></tr>', 'html');
 			return;
 		}
 
-		safeSet(daysCountTable, '<tr><td colspan="8" style="text-align:center;">Loading...</td></tr>', 'html');
+		safeSet(daysCountTable, '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>', 'html');
 
-		// Get total approved students
-		const usersQ = getCollegeFilteredQuery('users');
-		const usersSnap = await getDocs(usersQ);
-		let totalStudents = 0;
-		usersSnap.forEach(d => {
-			const u = d.data();
-			if (u.role === "student" && u.approved) {
-				totalStudents++;
-			}
-		});
-
-		if (totalStudents === 0) {
-			safeSet(daysCountTable, '<tr><td colspan="8" style="text-align:center;">No approved students found</td></tr>', 'html');
-			return;
-		}
-
-		// Get attendance records
-		const attQ = getCollegeFilteredQuery('attendanceRecords');
-		const attSnap = await getDocs(attQ);
-		const dateStats = {};
-
-		attSnap.forEach(d => {
-			const record = d.data();
-			const date = record.date;
-
-			if (date >= startDate && date <= endDate) {
-				if (!dateStats[date]) {
-					dateStats[date] = { fnPresent: 0, anPresent: 0 };
-				}
-
-				if (record.status === "present") {
-					if (record.session === "FN") {
-						dateStats[date].fnPresent++;
-					} else if (record.session === "AN") {
-						dateStats[date].anPresent++;
+		// Fetch holidays for this college
+		const holidaySet = new Set();
+		try {
+			const hSnap = await getDocs(getCollegeFilteredQuery('holidays'));
+			hSnap.forEach(d => {
+				const h = d.data();
+				if (h.date) holidaySet.add(h.date);
+				// Range holidays
+				if (h.startDate && h.endDate) {
+					const cur = new Date(h.startDate);
+					const fin = new Date(h.endDate);
+					while (cur <= fin) {
+						holidaySet.add(cur.toISOString().split('T')[0]);
+						cur.setDate(cur.getDate() + 1);
 					}
 				}
-			}
-		});
+			});
+		} catch (_) {}
 
-		// Generate all dates in range
+		// Build date list
 		const dates = [];
-		const current = new Date(startDate);
-		const end = new Date(endDate);
-
-		while (current <= end) {
-			const dateStr = current.toISOString().split('T')[0];
-			dates.push(dateStr);
-			current.setDate(current.getDate() + 1);
+		const cur = new Date(startDate + 'T00:00:00');
+		const fin = new Date(endDate   + 'T00:00:00');
+		while (cur <= fin) {
+			dates.push(cur.toISOString().split('T')[0]);
+			cur.setDate(cur.getDate() + 1);
 		}
 
-		if (dates.length === 0) {
-			safeSet(daysCountTable, '<tr><td colspan="8" style="text-align:center;">No dates in range</td></tr>', 'html');
-			return;
-		}
-
-		// Generate table rows
-		let rows = "";
-		dates.forEach((date, index) => {
-			const dateObj = new Date(date + 'T00:00:00');
-			const isSunday = dateObj.getDay() === 0;
-
-			if (isSunday) {
-				rows += `
-					<tr>
-						<td>${index + 1}</td>
-						<td><strong>${date}</strong></td>
-						<td colspan="6" style="text-align: center; color: #8b5cf6; font-weight: 600;">Holiday</td>
-					</tr>
-				`;
-			} else {
-				const stats = dateStats[date] || { fnPresent: 0, anPresent: 0 };
-				const fnAbsent = totalStudents - stats.fnPresent;
-				const anAbsent = totalStudents - stats.anPresent;
-				const totalPresent = stats.fnPresent + stats.anPresent;
-				const totalPossible = totalStudents * 2; // FN + AN
-				const percentage = totalPossible > 0 ? ((totalPresent / totalPossible) * 100).toFixed(1) : 0;
-				const percentColor = percentage >= 75 ? '#10b981' : percentage >= 50 ? '#f59e0b' : '#ef4444';
-
-				rows += `
-					<tr>
-						<td>${index + 1}</td>
-						<td><strong>${date}</strong></td>
-						<td style="color: #10b981;">${stats.fnPresent}</td>
-						<td style="color: #ef4444;">${fnAbsent}</td>
-						<td style="color: #10b981;">${stats.anPresent}</td>
-						<td style="color: #ef4444;">${anAbsent}</td>
-						<td><strong>${totalPresent}</strong></td>
-						<td style="color: ${percentColor}; font-weight: 600;">${percentage}%</td>
-					</tr>
-				`;
-			}
+		// Summarise by month for readability
+		// Group dates into months
+		const months = {};
+		dates.forEach(d => {
+			const key = d.slice(0, 7); // YYYY-MM
+			if (!months[key]) months[key] = [];
+			months[key].push(d);
 		});
+
+		let rows = '';
+		let grandTotal = 0, grandSundays = 0, grandHolidays = 0, grandWorking = 0;
+		let period = 1;
+
+		Object.entries(months).forEach(([monthKey, dayList]) => {
+			let sundays = 0, holidays = 0;
+			dayList.forEach(d => {
+				const dow = new Date(d + 'T00:00:00').getDay();
+				if (dow === 0) { sundays++; }
+				else if (holidaySet.has(d)) { holidays++; }
+			});
+			const total   = dayList.length;
+			const working = total - sundays - holidays;
+
+			grandTotal    += total;
+			grandSundays  += sundays;
+			grandHolidays += holidays;
+			grandWorking  += working;
+
+			const monthLabel = new Date(monthKey + '-01').toLocaleString('default', { month: 'long', year: 'numeric' });
+			rows += `
+				<tr>
+					<td>${period++}</td>
+					<td><strong>${monthLabel}</strong></td>
+					<td>${total}</td>
+					<td style="color:#8b5cf6;">${sundays}</td>
+					<td style="color:#f59e0b;">${holidays}</td>
+					<td style="color:#10b981; font-weight:700;">${working}</td>
+				</tr>`;
+		});
+
+		// Totals row
+		rows += `
+			<tr style="font-weight:800; border-top:2px solid rgba(255,255,255,0.2);">
+				<td colspan="2" style="text-align:right;">TOTAL</td>
+				<td>${grandTotal}</td>
+				<td style="color:#8b5cf6;">${grandSundays}</td>
+				<td style="color:#f59e0b;">${grandHolidays}</td>
+				<td style="color:#10b981;">${grandWorking}</td>
+			</tr>`;
 
 		safeSet(daysCountTable, rows, 'html');
 
 	} catch (err) {
 		console.error('loadAttendanceStatistics error', err);
-		safeSet(daysCountTable, '<tr><td colspan="8" style="text-align:center;">Failed to load statistics</td></tr>', 'html');
+		safeSet(daysCountTable, '<tr><td colspan="5" style="text-align:center; color:#ef4444;">Failed to load statistics</td></tr>', 'html');
 	}
 }
 
