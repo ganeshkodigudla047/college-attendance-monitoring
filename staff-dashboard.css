@@ -2140,3 +2140,26 @@ body.has-bg td {
 body.has-bg tbody tr:hover {
     background: rgba(255,255,255,0.12) !important;
 }
+
+/* ===== STICKY TABLE HEADERS — universal ===== */
+table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    white-space: nowrap !important;
+    padding: 13px 16px !important;
+}
+body.has-bg table thead th {
+    background: rgba(15,23,42,0.82) !important;
+    color: rgba(255,255,255,0.9) !important;
+    border-bottom-color: rgba(255,255,255,0.15) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}

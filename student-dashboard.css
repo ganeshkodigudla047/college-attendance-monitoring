@@ -1319,11 +1319,14 @@ body.has-bg section h2 {
 }
 
 .modal-content {
-	background: white;
+	background: rgba(15,23,42,0.75);
+	backdrop-filter: blur(20px);
+	-webkit-backdrop-filter: blur(20px);
+	border: 1px solid rgba(255,255,255,0.15);
 	padding: 18px;
 	border-radius: 10px;
 	width: 320px;
-	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 	text-align: left;
 }
 
@@ -1796,6 +1799,7 @@ body.has-bg section h2 {
 	max-width: 1000px;
 	width: 100%;
 	box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+	overflow: visible;
 }
 .records-header {
 	display: flex;
@@ -1856,9 +1860,11 @@ body.has-bg .records-select {
 .records-table-scroll {
 	overflow-x: auto;
 	overflow-y: auto;
-	max-height: 460px;
+	max-height: calc(100vh - 260px);
 	scrollbar-width: thin;
 	scrollbar-color: rgba(100,116,139,0.4) transparent;
+	/* Must NOT have overflow:hidden on any parent for sticky to work */
+	position: relative;
 }
 .records-table-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
 .records-table-scroll::-webkit-scrollbar-track { background: transparent; }
@@ -1874,14 +1880,14 @@ body.has-bg .records-select {
 	position: sticky;
 	top: 0;
 	z-index: 10;
-	background: rgba(241,245,249,0.97);
-	color: #475569;
+	background: #1e293b;
+	color: #f1f5f9;
 	font-size: 12px;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
 	padding: 14px 16px;
-	border-bottom: 2px solid rgba(0,0,0,0.08);
+	border-bottom: 2px solid rgba(255,255,255,0.1);
 	white-space: nowrap;
 }
 .records-fixed-table td {
@@ -1902,10 +1908,9 @@ body.has-bg .records-table-scroll {
 }
 body.has-bg .records-table-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); }
 body.has-bg .records-fixed-table thead th {
-	background: rgba(15,23,42,0.8) !important;
-	color: rgba(255,255,255,0.75) !important;
+	background: transparent !important;
+	color: rgba(255,255,255,0.85) !important;
 	border-bottom-color: rgba(255,255,255,0.15) !important;
-	backdrop-filter: blur(8px);
 }
 body.has-bg .records-fixed-table td {
 	color: rgba(255,255,255,0.9) !important;
@@ -1917,7 +1922,6 @@ body.has-bg .records-fixed-table tbody tr:hover {
 
 .records-container table {
 	border-radius: 12px;
-	overflow: hidden;
 }
 
 table {
@@ -2412,12 +2416,10 @@ body:has(#loadingScreen) .status-box,
 
 /* ===== GLASS TABLE + ROW HOVER ===== */
 .table-container, .records-container {
-    background: rgba(255,255,255,0.85) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
+    background: transparent !important;
     border: 1px solid rgba(0,0,0,0.08) !important;
     border-radius: 16px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
 }
 table { background: transparent !important; }
@@ -2455,10 +2457,9 @@ body.has-bg .records-container {
 }
 body.has-bg .records-container::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); }
 body.has-bg th {
-    background: rgba(15,23,42,0.75) !important;
-    color: rgba(255,255,255,0.7) !important;
+    background: transparent !important;
+    color: rgba(255,255,255,0.85) !important;
     border-bottom-color: rgba(255,255,255,0.15) !important;
-    backdrop-filter: blur(8px);
 }
 body.has-bg td {
     color: rgba(255,255,255,0.9) !important;
@@ -2560,3 +2561,36 @@ body:not(.has-bg) .custom-select-trigger:hover {
     border-color: #94a3b8;
 }
 body:not(.has-bg) .custom-select-arrow { color: #64748b; }
+
+/* ===== STICKY TABLE HEADERS — universal ===== */
+table thead th,
+.records-fixed-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 2px solid rgba(255,255,255,0.1) !important;
+    white-space: nowrap !important;
+    padding: 13px 16px !important;
+}
+body.has-bg table thead th,
+body.has-bg .records-fixed-table thead th {
+    background: rgba(15,23,42,0.92) !important;
+    color: rgba(255,255,255,0.95) !important;
+    border-bottom-color: rgba(255,255,255,0.15) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* Records sticky header — with background image */
+body.has-bg #recordsPage .records-fixed-table thead th {
+    background: rgba(15,23,42,0.92) !important;
+    color: rgba(255,255,255,0.95) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}

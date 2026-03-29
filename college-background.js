@@ -361,12 +361,19 @@ function _buildCSS(imageUrl, isDark) {
     const textShadow  = isDark ? "0 1px 4px rgba(0,0,0,0.9)" : "0 1px 3px rgba(255,255,255,0.9)";
 
     return `
+        /* ── FIXED BACKGROUND via pseudo-element — never moves on scroll ── */
+        body.has-bg::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            background-image: url("${imageUrl}");
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+        }
         body {
-            background-image: url("${imageUrl}") !important;
-            background-size: cover !important;
-            background-position: center center !important;
-            background-attachment: fixed !important;
-            background-repeat: no-repeat !important;
+            background-image: none !important;
         }
 
         /* ── MAKE ALL CONTENT TRANSPARENT ── */
@@ -430,13 +437,11 @@ function _buildCSS(imageUrl, isDark) {
             color: #93c5fd !important;
         }
 
-        /* ── HEADER: restore background image trick ── */
+        /* ── HEADER: transparent — bg shows through via body::before ── */
         .header {
-            background-image: url("${imageUrl}") !important;
-            background-size: cover !important;
-            background-position: center top !important;
-            background-attachment: fixed !important;
-            background-repeat: no-repeat !important;
+            background: transparent !important;
+            background-image: none !important;
+            box-shadow: none !important;
         }
 
         /* ── BUTTONS: transparent glass style ── */

@@ -560,11 +560,15 @@ body {
 
 /* ===== CLEAN TABLE STYLES ===== */
 .table-wrap {
-    background: #fff;
+    background: transparent;
     border: 1px solid rgba(0,0,0,0.08);
     border-radius: 14px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 520px;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(100,116,139,0.4) transparent;
 }
 /* Scrollable inner container for all table-wrap tables */
 .table-wrap > table,
@@ -572,13 +576,6 @@ body {
     width: 100%;
     border-collapse: collapse;
     background: transparent;
-}
-.table-wrap {
-    overflow-x: auto;
-    overflow-y: auto;
-    max-height: 520px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(100,116,139,0.4) transparent;
 }
 .table-wrap::-webkit-scrollbar { height: 7px; width: 7px; }
 .table-wrap::-webkit-scrollbar-track { background: transparent; }
@@ -1155,3 +1152,52 @@ body.has-bg .sidebar li:hover {
 body.has-bg .status-registered { background-color: rgba(16,185,129,0.25) !important; color: #6ee7b7 !important; }
 body.has-bg .status-pending    { background-color: rgba(245,158,11,0.25) !important; color: #fcd34d !important; }
 body.has-bg .status-expired    { background-color: rgba(239,68,68,0.25)  !important; color: #fca5a5 !important; }
+
+/* ===== STICKY TABLE HEADERS — universal ===== */
+table thead th,
+.table-wrap thead th,
+.table-responsive thead th,
+.records-fixed-table thead th,
+.attendance-fixed-table thead th,
+.invite-table thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    border-bottom: 2px solid #e2e8f0 !important;
+    white-space: nowrap !important;
+    padding: 13px 16px !important;
+}
+body.has-bg table thead th,
+body.has-bg .table-wrap thead th,
+body.has-bg .table-responsive thead th,
+body.has-bg .records-fixed-table thead th,
+body.has-bg .attendance-fixed-table thead th,
+body.has-bg .invite-table thead th {
+    background: rgba(15,23,42,0.82) !important;
+    color: rgba(255,255,255,0.9) !important;
+    border-bottom-color: rgba(255,255,255,0.15) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+}
+
+/* ===== FORCE STICKY HEADERS — table must scroll inside container ===== */
+/* All table wrappers must have overflow-y:auto and a max-height */
+.table-wrap,
+.table-responsive {
+    overflow-x: auto !important;
+    overflow-y: auto !important;
+    max-height: 520px !important;
+}
+/* Sticky th needs a scrolling ancestor — ensure it */
+.table-wrap thead th,
+.table-responsive thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 20 !important;
+}
