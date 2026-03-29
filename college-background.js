@@ -509,7 +509,14 @@ function _buildCSS(imageUrl, isDark) {
         body.has-bg .overlay,
         body.has-bg #logoutOverlay { background: rgba(0,0,0,0.6) !important; }
         body.has-bg .modal-card,
-        body.has-bg .modal { background: rgba(15,23,42,0.95) !important; }
+        body.has-bg .modal,
+        body.has-bg .request-modal-content,
+        body.has-bg .admin-profile-modal-card {
+            background: rgba(15,23,42,0.75) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+        }
 
         /* ── NOTIFY LIST ── */
         body.has-bg .notify-list { background: rgba(15,23,42,0.92) !important; }
