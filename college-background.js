@@ -223,7 +223,7 @@ function _loadAdaptiveImage(imageUrl) {
             .catch(() => {});
     };
     const sep = imageUrl.includes('?') ? '&' : '?';
-    img.src = imageUrl + sep + '_cb=' + Date.now();
+    img.src = imageUrl.startsWith('data:') ? imageUrl : imageUrl + sep + '_cb=' + Date.now();
 
     if (!enabled) return; // don't attach scroll/mutation listeners
 
@@ -286,7 +286,7 @@ function _detectImageBrightness(imageUrl) {
 
         // Append cache-bust so browser re-fetches with CORS headers
         const sep = imageUrl.includes("?") ? "&" : "?";
-        img.src = imageUrl + sep + "_cb=" + Date.now();
+        img.src = imageUrl.startsWith('data:') ? imageUrl : imageUrl + sep + "_cb=" + Date.now();
     });
 }
 
@@ -319,6 +319,7 @@ function _stripInlineBackgrounds() {
     document.querySelectorAll(TRANSPARENT_SELECTORS).forEach(el => {
         if (el.closest('.custom-select-wrap')) return;
         if (el.classList.contains('cs-wrap') || el.classList.contains('cs-trigger') || el.classList.contains('cs-dropdown') || el.classList.contains('cs-option')) return;
+        if (el.id === 'pageAdBanner' || el.closest('#pageAdBanner')) return;
         el.style.removeProperty('background');
         el.style.removeProperty('background-color');
         el.style.removeProperty('background-image');
@@ -328,6 +329,7 @@ function _stripInlineBackgrounds() {
     document.querySelectorAll('.section *, .page *').forEach(el => {
         if (el.classList.contains('cs-wrap') || el.classList.contains('cs-trigger') || el.classList.contains('cs-dropdown') || el.classList.contains('cs-option')) return;
         if (el.closest('.custom-select-wrap')) return;
+        if (el.id === 'pageAdBanner' || el.closest('#pageAdBanner')) return;
         if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'OPTION' || el.tagName === 'TEXTAREA') return;
         if (el.id === 'loadingScreen' || el.closest('#loadingScreen')) return;
         if (el.classList.contains('modal') || el.classList.contains('overlay') || el.closest('.modal') || el.closest('.overlay')) return;
@@ -361,6 +363,12 @@ function _buildCSS(imageUrl, isDark) {
     const textShadow  = isDark ? "0 1px 4px rgba(0,0,0,0.9)" : "0 1px 3px rgba(255,255,255,0.9)";
 
     return `
+        /* ── AD BANNER: always keep visible ── */
+        body.has-bg #pageAdBanner {
+            background: #0f172a !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;
+        }
+
         /* ── FIXED BACKGROUND via pseudo-element — never moves on scroll ── */
         body.has-bg::before {
             content: '';

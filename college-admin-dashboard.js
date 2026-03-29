@@ -1,6 +1,7 @@
 import { auth, db } from "./firebase.js";
 import { loadAndApplyBackground, saveCollegeBackground, deleteCollegeBackground } from "./college-background.js";
 import { initAutoLogout } from "./auto-logout.js";
+import { loadAdSlot } from "./ad-slot.js";
 
 import {
 	onAuthStateChanged,
@@ -1004,6 +1005,7 @@ onAuthStateChanged(auth, async user => {
 
 	hideLoading();
 	initAutoLogout(() => signOut(auth), 'login.html', 60);
+	loadAdSlot();
 	setTimeout(initAllCustomSelects, 300);
 
 	// Initialize email approval service (non-blocking)

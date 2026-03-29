@@ -2,6 +2,7 @@
 import { auth, db } from "./firebase.js";
 import { loadAndApplyBackground } from "./college-background.js";
 import { initAutoLogout } from "./auto-logout.js";
+import { loadAdSlot } from "./ad-slot.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, collection, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
@@ -621,6 +622,7 @@ onAuthStateChanged(auth, async (user) => {
         // Hide loading screen — critical data is ready
         if (window.hideLoading) window.hideLoading();
         initAutoLogout(() => signOut(auth), 'login.html', 60);
+        loadAdSlot();
 
         // 4. Background markers
         autoMarkAbsent().catch(err => console.warn("Auto-absent permission error:", err));

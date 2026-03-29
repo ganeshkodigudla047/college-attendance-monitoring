@@ -7588,15 +7588,15 @@ async function loadAdSlot() {
     } catch (e) { if (!_isOfflineError(e)) console.warn('adSlot load:', e); }
 }
 
-async function saveAd(url) {
+async function saveAd(url, forcedType = null) {
     if (!url) return _adStatus('Please enter a URL.', false);
-    const type = _ytEmbedUrlAd(url) ? 'youtube' : (/\.(mp4|webm|ogg)$/i.test(url) ? 'video' : 'image');
+    const type = forcedType || (_ytEmbedUrlAd(url) ? 'youtube' : (/\.(mp4|webm|ogg)$/i.test(url) ? 'video' : 'image'));
     try {
         await setDoc(AD_DOC(), { adUrl: url, adType: type }, { merge: true });
         _applyAdSlot(url, type);
         _applyAdPreview(url, type);
         _adStatus('✅ Ad saved and now showing on your dashboard!');
-    } catch (e) { _adStatus('Error: ' + e.message, false); }
+    } catch (e) { _adStatus('Error saving ad: ' + e.message, false); }
 }
 
 async function removeAd() {
@@ -7678,8 +7678,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!_adBlobUrl) return _adStatus('Please choose a file first.', false);
             const fi = document.getElementById('adFileInput');
             const file = fi?.files[0];
-            const type = file && file.type.startsWith('video') ? 'video' : 'image';
-            saveAdLocal(_adBlobUrl, type);
+            if (!file) return _adStatus('Please choose a file first.', false);
+            if (file.size > 1.5 * 1024 * 1024) return _adStatus('File too large. Max 1.5 MB. Use a URL instead.', false);
+            const type = file.type.startsWith('video') ? 'video' : 'image';
+            _adStatus('Saving...', true);
+            const reader = new FileReader();
+            reader.onload = (e) => saveAd(e.target.result, type);
+            reader.onerror = () => _adStatus('Failed to read file.', false);
+            reader.readAsDataURL(file);
         } else {
             saveAd(document.getElementById('adUrlInput')?.value.trim());
         }

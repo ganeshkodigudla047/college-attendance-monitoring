@@ -29,21 +29,25 @@ function _injectStyles() {
     s.id = 'ad-loader-style';
     s.textContent = `
         #pageAdBanner {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9998;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-            border: 1px solid rgba(255,255,255,0.15);
-            background: #0f172a;
+            position: fixed !important;
+            bottom: 20px !important;
+            right: 20px !important;
+            z-index: 9998 !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.35) !important;
+            border: 1px solid rgba(255,255,255,0.15) !important;
+            background: #0f172a !important;
             display: none;
             animation: adSlideIn 0.4s ease-out;
             max-width: 300px;
             width: 300px;
         }
-        #pageAdBanner.visible { display: block; }
+        #pageAdBanner.visible { display: block !important; }
+        #pageAdBanner * { background: transparent !important; }
+        #pageAdBanner img, #pageAdBanner video, #pageAdBanner iframe {
+            background: transparent !important;
+        }
         @keyframes adSlideIn {
             from { opacity: 0; transform: translateY(20px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -128,9 +132,17 @@ export async function loadPageAd() {
     try {
         const snap = await getDoc(AD_DOC());
         if (!snap.exists()) return;
-        const { adUrl, adType } = snap.data();
-        if (adUrl) _buildBanner(adUrl, adType || 'image');
+        const data = snap.data();
+        const adUrl = data.adUrl;
+        const adType = data.adType || 'image';
+        if (!adUrl) return;
+        // Skip base64 data URLs — too large for login page banner
+        if (adUrl.startsWith('data:')) {
+            _buildBanner(adUrl, adType);
+            return;
+        }
+        _buildBanner(adUrl, adType);
     } catch (e) {
-        // Silently fail — ad is non-critical
+        console.warn('Ad loader:', e);
     }
 }
