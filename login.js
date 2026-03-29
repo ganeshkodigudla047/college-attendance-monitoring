@@ -1,4 +1,5 @@
 import { auth, db } from "./firebase.js";
+import { loadPageAd } from "./ad-loader.js";
 import {
   signInWithEmailAndPassword,
   signOut,
@@ -481,5 +482,10 @@ sendResetBtn.onclick = async () => {
         document.documentElement.style.setProperty('--container-input-bg', 'rgba(255,255,255,0.15)');
         document.documentElement.style.setProperty('--container-input-border', 'rgba(255,255,255,0.4)');
         document.documentElement.style.setProperty('--container-input-color', '#ffffff');
+        document.documentElement.style.setProperty('--container-placeholder', 'rgba(255,255,255,0.55)');
     } catch (e) { console.warn('Platform background:', e); }
 })();
+
+
+// Load advertisement
+loadPageAd();

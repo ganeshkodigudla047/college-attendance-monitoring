@@ -70,13 +70,14 @@ input {
 }
 
 input::placeholder {
-    color: #94a3b8;
+    color: var(--container-placeholder, #94a3b8);
 }
 
 input:focus {
     outline: none;
     border-color: #3b82f6;
-    background: #ffffff;
+    background: var(--container-input-bg, #ffffff);
+    color: var(--container-input-color, #0f172a);
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
