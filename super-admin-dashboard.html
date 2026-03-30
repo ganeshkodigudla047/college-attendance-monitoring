@@ -931,6 +931,7 @@
 							<li data-sec="timing"><span>Timing</span></li>
 							<li data-sec="gps"><span>GPS Configuration</span></li>
 							<li data-sec="holiday"><span>Holiday Management</span></li>
+							<li data-sec="security"><span>🔒 Security & Permissions</span></li>
 						</ul>
 					</div>
 					<li id="advancedSettingsToggle">
@@ -1890,32 +1891,39 @@
 
 		<!-- SECURITY & PERMISSIONS -->
 		<section id="security" class="page section">
-			<div class="greeting-container">
-				<h2>Security & Permissions</h2>
-			</div>
+			<h2>🔒 Security & Permissions</h2>
+			<p style="opacity:0.65; margin-bottom:28px;">Configure permissions. Changes save automatically.</p>
 
-			<div class="status-box" style="margin-top: 20px; max-width: 600px;">
-				<div class="status-title">Staff Authorities</div>
-				<p class="status-message">Configure high-level permissions for HODs and Staff members.</p>
+			<div style="max-width:580px; display:flex; flex-direction:column; gap:14px;">
 
-				<div class="admin-setting-item"
-					style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: transparent; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 20px;">
+				<!-- HOD Profile Approval -->
+				<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; border-radius:14px; border:1px solid rgba(255,255,255,0.12);">
 					<div>
-						<div class="admin-setting-label" style="margin-bottom: 4px;">HOD Profile Approval</div>
-						<p style="font-size: 12px; color: #64748b; margin: 0;">Allow HODs to approve student
-							profile/photo update requests (GPS required).</p>
+						<div style="font-weight:700; font-size:14px;">👨‍🏫 HOD Profile Approval</div>
+						<div style="font-size:12px; opacity:0.6; margin-top:3px;">Allow HODs to approve student profile/photo update requests (GPS required).</div>
 					</div>
-					<label class="switch" style="position: relative; display: inline-block; width: 48px; height: 24px;">
-						<input type="checkbox" id="hodProfileApprovalToggle" style="opacity: 0; width: 0; height: 0;">
-						<span class="slider round"
-							style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 24px;"></span>
-					</label>
+					<div style="position:relative; width:52px; height:28px; flex-shrink:0;">
+						<input type="checkbox" id="hodProfileApprovalToggle" style="opacity:0; width:0; height:0; position:absolute;" />
+						<span id="hodProfileApprovalTrack" onclick="document.getElementById('hodProfileApprovalToggle').click()" style="position:absolute; inset:0; border-radius:999px; background:#cbd5e1; cursor:pointer; transition:background 0.2s;"></span>
+						<span id="hodProfileApprovalThumb" style="position:absolute; top:4px; left:4px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); transition:transform 0.2s; pointer-events:none;"></span>
+					</div>
 				</div>
 
-				<button id="saveSecuritySettings" class="logout-btn"
-					style="background: #2563eb; color: white; border: none; width: auto; padding: 12px 32px; font-size: 15px;">💾
-					Save Security Settings</button>
+				<!-- Face Re-Registration -->
+				<div style="display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px 20px; border-radius:14px; border:1px solid rgba(255,255,255,0.12);">
+					<div>
+						<div style="font-weight:700; font-size:14px;">🤳 Allow Face Re-Registration</div>
+						<div style="font-size:12px; opacity:0.6; margin-top:3px;">When enabled, students can re-register their face from their profile page. Disable once done.</div>
+					</div>
+					<div style="position:relative; width:52px; height:28px; flex-shrink:0;">
+						<input type="checkbox" id="faceReregisterToggle" style="opacity:0; width:0; height:0; position:absolute;" />
+						<span id="faceReregisterTrack" onclick="document.getElementById('faceReregisterToggle').click()" style="position:absolute; inset:0; border-radius:999px; background:#cbd5e1; cursor:pointer; transition:background 0.2s;"></span>
+						<span id="faceReregisterThumb" style="position:absolute; top:4px; left:4px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.25); transition:transform 0.2s; pointer-events:none;"></span>
+					</div>
+				</div>
+
 			</div>
+			<p id="securitySaveStatus" style="margin-top:14px; font-size:13px; font-weight:600; opacity:0;"></p>
 		</section>
 
 		<!-- EMAIL REMINDER MANAGEMENT -->

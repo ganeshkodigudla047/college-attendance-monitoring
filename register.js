@@ -21,8 +21,7 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// MediaPipe ESM Import
-import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
+// face-api.js loaded via <script> tag in register.html
 
 
 /* ================= PROTOCOL CHECK ================= */
@@ -797,49 +796,33 @@ if (staffDept) {
 }
 
 
-/* ================= FACE CAPTURE LOGIC (MediaPipe) ================= */
+/* ================= FACE CAPTURE LOGIC (face-api.js) ================= */
 
-let faceLandmarker;
+let faceApiReady = false;
 
 async function loadFaceModels() {
-  faceMsg.innerText = "Loading MediaPipe AI...";
-  console.log("Initializing MediaPipe Face Landmarker...");
-
+  faceMsg.innerText = "Loading face recognition AI...";
   try {
-    // Check for Secure Context (required for MediaPipe WASM)
-    if (!window.isSecureContext && location.protocol !== 'file:') {
-      console.warn("MediaPipe may fail in insecure contexts. Use HTTPS or localhost.");
-    }
-
-    const filesetResolver = await FilesetResolver.forVisionTasks(
-      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
-    );
-
-    faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-      baseOptions: {
-        modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`,
-        delegate: "GPU"
-      },
-      outputFaceBlendshapes: true,
-      runningMode: "VIDEO",
-      numFaces: 1
-    });
-
-    console.log("MediaPipe initialized successfully.");
-    faceMsg.innerText = "Position your face in the frame";
+    const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+    await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+    ]);
+    faceApiReady = true;
+    faceMsg.innerText = "Position your face in the frame and click Capture";
+    console.log("✅ face-api.js models loaded");
   } catch (err) {
-    console.error("MediaPipe Loading Failed:", err);
-    faceMsg.innerText = `Error: ${err.message || "Failed to load AI"}`;
-    if (err.message.includes("fetch") || err.message.includes("wasm")) {
-      faceMsg.innerHTML = "Error: WASM Load Failed.<br><small>Use VS Code Live Server (127.0.0.1)</small>";
-    }
+    console.error("Face model load failed:", err);
+    faceMsg.innerText = `Error loading face AI: ${err.message}`;
   }
 }
 
 async function startCamera() {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480 } });
-    video.srcObject = stream;
+    const s = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: "user" } });
+    video.srcObject = s;
+    stream = s;
     video.play();
   } catch (err) {
     console.error("Camera Error:", err);
@@ -848,42 +831,41 @@ async function startCamera() {
 }
 
 function stopCamera() {
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-    stream = null;
-  }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
 }
 
 captureBtn.onclick = async () => {
-  if (!video.srcObject || !faceLandmarker) return;
+  if (!video.srcObject) return;
+  if (!faceApiReady) { faceMsg.innerText = "⏳ AI still loading, please wait..."; return; }
 
-  faceMsg.innerText = "Capturing Face Mesh...";
+  faceMsg.innerText = "📷 Capturing face...";
   captureBtn.disabled = true;
 
   try {
-    const result = await faceLandmarker.detectForVideo(video, performance.now());
+    const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+    const detection = await faceapi
+        .detectSingleFace(video, detectorOptions)
+        .withFaceLandmarks()
+        .withFaceDescriptor();
 
-    if (!result || !result.faceLandmarks || result.faceLandmarks.length === 0) {
-      faceMsg.innerText = "No face detected. Try again.";
+    if (!detection) {
+      faceMsg.innerText = "❌ No face detected. Ensure good lighting and face the camera.";
       captureBtn.disabled = false;
       return;
     }
 
-    // Save the 478 landmarks (x, y, z) as a flat array
-    const landmarks = result.faceLandmarks[0];
-    faceDescriptor = landmarks.flatMap(l => [l.x, l.y, l.z]);
+    // Save 128-dimensional face recognition embedding
+    faceDescriptor = Array.from(detection.descriptor);
 
-    // UI Feedback
     captureFeedback.classList.remove("hidden");
-    faceMsg.innerText = "Face Mesh Registered ✓";
-
+    faceMsg.innerText = "✅ Face registered successfully";
     stopCamera();
     video.classList.add("hidden");
     checkForm();
 
   } catch (err) {
-    console.error("MediaPipe Capture Error:", err);
-    faceMsg.innerText = "Error during capture";
+    console.error("Face capture error:", err);
+    faceMsg.innerText = `Error: ${err.message}`;
     captureBtn.disabled = false;
   }
 };

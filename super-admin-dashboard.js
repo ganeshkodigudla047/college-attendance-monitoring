@@ -790,6 +790,7 @@ function showSection(id, isBack = false) {
 			if (typeof loadAdminProfile === 'function') loadAdminProfile();
 			break;
 		case 'settings':
+		case 'security':
 			if (typeof loadSecuritySettings === 'function') loadSecuritySettings();
 			break;
 		case 'dayscount':
@@ -3953,29 +3954,60 @@ async function handleProfileRequest(requestId, status) {
 
 /* ================= SECURITY SETTINGS ================= */
 
-if (saveSecuritySettings) {
-	saveSecuritySettings.onclick = async () => {
-		try {
-			await setDoc(doc(db, "settings", "security"), {
-				hodProfileApprovalEnabled: hodProfileApprovalToggle.checked
-			}, { merge: true });
-			alert("Security settings saved");
-		} catch (err) {
-			console.error("saveSecuritySettings error", err);
-			alert("Failed to save settings");
+// saveSecuritySettings button removed — settings now auto-save on toggle
+
+// Auto-save security toggle helper
+async function _saveSecurityToggle(key, value) {
+	try {
+		await setDoc(doc(db, "settings", "security"), { [key]: value }, { merge: true });
+		const status = document.getElementById("securitySaveStatus");
+		if (status) {
+			status.textContent = "✅ Saved";
+			status.style.opacity = "1";
+			status.style.color = "#10b981";
+			setTimeout(() => { status.style.opacity = "0"; }, 2000);
 		}
-	};
+	} catch (err) {
+		console.error("_saveSecurityToggle error", err);
+	}
+}
+
+function _applyToggle(checkboxId, trackId, thumbId, checked) {
+	const track = document.getElementById(trackId);
+	const thumb = document.getElementById(thumbId);
+	const cb    = document.getElementById(checkboxId);
+	if (cb)    cb.checked = checked;
+	if (track) track.style.background = checked ? "#3b82f6" : "#cbd5e1";
+	if (thumb) thumb.style.transform  = checked ? "translateX(24px)" : "translateX(0)";
 }
 
 async function loadSecuritySettings() {
 	try {
 		const snap = await getDoc(doc(db, "settings", "security"));
-		if (snap.exists()) {
-			const data = snap.data();
-			if (hodProfileApprovalToggle) hodProfileApprovalToggle.checked = !!data.hodProfileApprovalEnabled;
+		const data = snap.exists() ? snap.data() : {};
+		_applyToggle("hodProfileApprovalToggle", "hodProfileApprovalTrack", "hodProfileApprovalThumb", !!data.hodProfileApprovalEnabled);
+		_applyToggle("faceReregisterToggle",     "faceReregisterTrack",     "faceReregisterThumb",     !!data.faceReregisterEnabled);
+
+		// Wire auto-save on change
+		const hodToggle  = document.getElementById("hodProfileApprovalToggle");
+		const faceToggle = document.getElementById("faceReregisterToggle");
+
+		if (hodToggle && !hodToggle._wired) {
+			hodToggle._wired = true;
+			hodToggle.addEventListener("change", () => {
+				_applyToggle("hodProfileApprovalToggle", "hodProfileApprovalTrack", "hodProfileApprovalThumb", hodToggle.checked);
+				_saveSecurityToggle("hodProfileApprovalEnabled", hodToggle.checked);
+			});
+		}
+		if (faceToggle && !faceToggle._wired) {
+			faceToggle._wired = true;
+			faceToggle.addEventListener("change", () => {
+				_applyToggle("faceReregisterToggle", "faceReregisterTrack", "faceReregisterThumb", faceToggle.checked);
+				_saveSecurityToggle("faceReregisterEnabled", faceToggle.checked);
+			});
 		}
 	} catch (err) {
-		if (!_isOfflineError(err)) console.warn('loadSecuritySettings error:', err);
+		if (!_isOfflineError(err)) console.warn("loadSecuritySettings error:", err);
 	}
 }
 

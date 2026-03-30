@@ -6,16 +6,13 @@ import { loadAdSlot } from "./ad-slot.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
 import { doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, collection, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
 
-// MediaPipe ESM Import
-import { FaceLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
-
 // ================= GLOBAL VARIABLES =================
 let currentUser = null;
 let me = null;
 let settings = null;
-let registeredMesh = null;
-let faceLandmarker = null;
-let activeRequestField = null;
+let registeredMesh = null;      // stored face descriptor (Float32Array)
+let faceApiReady = false;       // face-api.js models loaded
+let otherStudentMeshes = [];    // [{uid, name, descriptor}]
 let activeRequestLabel = null;
 let currentProfilePhotoBase64 = null;
 let userProfileUnsubscribe = null;
@@ -627,7 +624,7 @@ onAuthStateChanged(auth, async (user) => {
         // 4. Background markers
         autoMarkAbsent().catch(err => console.warn("Auto-absent permission error:", err));
 
-        // Background loading
+        // Background loading — don't await, non-blocking
         loadFaceModels();
         loadFaceDescriptor();
 
@@ -1081,6 +1078,9 @@ async function loadProfile() {
 
     await refreshProfileRequestVisuals();
     setGreeting(data.name);
+
+    // Check if face re-registration is enabled by super admin
+    checkFaceReregisterEnabled();
 }
 
 function setGreeting(name) {
@@ -1500,23 +1500,28 @@ async function autoMarkAbsent() {
 
 async function loadFaceModels() {
     try {
-        const filesetResolver = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm");
-        faceLandmarker = await FaceLandmarker.createFromOptions(filesetResolver, {
-            baseOptions: { modelAssetPath: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`, delegate: "GPU" },
-            outputFaceBlendshapes: true, runningMode: "VIDEO", numFaces: 1
-        });
-    } catch (err) { console.error("Face AI Load Failed:", err); }
+        const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
+        await Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+            faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+            faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)
+        ]);
+        faceApiReady = true;
+        console.log('✅ face-api.js models loaded');
+    } catch (err) {
+        console.error('Face model load failed:', err);
+    }
 }
 
 async function loadFaceDescriptor() {
     try {
         const snap = await getDoc(doc(db, "users", currentUser.uid));
         const data = snap.data();
-        if (data && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length > 0) {
-            registeredMesh = data.faceDescriptor;
-            console.log(`✅ Face descriptor loaded: ${registeredMesh.length} values`);
+        if (data && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length === 128) {
+            registeredMesh = new Float32Array(data.faceDescriptor);
+            console.log('✅ Face descriptor loaded (128-dim)');
         } else {
-            console.warn('⚠️ No face descriptor found for this user — face verification will fail');
+            console.warn('⚠️ No face descriptor — manual verification required');
             registeredMesh = null;
         }
     } catch (e) {
@@ -1525,66 +1530,41 @@ async function loadFaceDescriptor() {
     }
 }
 
-function compareMeshes(current, stored) {
-    if (!current || !stored || !Array.isArray(stored) || stored.length === 0) return false;
-    const flat = current.flatMap(l => [l.x, l.y, l.z]);
-    if (flat.length !== stored.length) return false;
-
-    // ── Key facial feature landmark indices (MediaPipe 478-point model) ──
-    // These are the most identity-discriminative points
-    const KEY_INDICES = [
-        // Eyes
-        33, 133, 159, 145, 362, 263, 386, 374,
-        // Nose bridge & tip
-        6, 197, 195, 4, 1, 2, 98, 327,
-        // Mouth corners & lips
-        61, 291, 13, 14, 17, 0, 267, 37,
-        // Cheekbones
-        116, 123, 147, 213, 345, 352, 376, 433,
-        // Jawline
-        172, 136, 150, 149, 176, 148, 152, 377, 400, 378, 379, 365, 397, 288,
-        // Eyebrows
-        70, 63, 105, 66, 107, 336, 296, 334, 293, 300,
-        // Forehead
-        10, 338, 297, 332, 284, 251, 389
-    ];
-
-    // ── Normalize using nose tip (1) as origin, inter-eye distance as scale ──
-    function getPoint(arr, idx) {
-        return { x: arr[idx*3], y: arr[idx*3+1], z: arr[idx*3+2] };
+async function loadOtherStudentDescriptors() {
+    try {
+        if (!me?.collegeId) return;
+        const q = query(collection(db, "users"),
+            where("collegeId", "==", me.collegeId),
+            where("role", "==", "student")
+        );
+        const snap = await getDocs(q);
+        otherStudentMeshes = [];
+        snap.forEach(d => {
+            if (d.id === currentUser.uid) return;
+            const data = d.data();
+            if (Array.isArray(data.faceDescriptor) && data.faceDescriptor.length === 128) {
+                otherStudentMeshes.push({
+                    uid: d.id,
+                    name: data.name || 'Unknown',
+                    descriptor: new Float32Array(data.faceDescriptor)
+                });
+            }
+        });
+        console.log(`✅ Loaded ${otherStudentMeshes.length} other student descriptors`);
+    } catch (e) {
+        console.warn('loadOtherStudentDescriptors:', e);
     }
-
-    const nose    = getPoint(flat, 1);
-    const eyeL    = getPoint(flat, 33);
-    const eyeR    = getPoint(flat, 263);
-    const eyeDist = Math.hypot(eyeR.x - eyeL.x, eyeR.y - eyeL.y) || 1;
-
-    const noseS    = getPoint(stored, 1);
-    const eyeLS    = getPoint(stored, 33);
-    const eyeRS    = getPoint(stored, 263);
-    const eyeDistS = Math.hypot(eyeRS.x - eyeLS.x, eyeRS.y - eyeLS.y) || 1;
-
-    // ── Compute weighted distance on key points only ──
-    let totalDist = 0;
-    for (const idx of KEY_INDICES) {
-        const c = getPoint(flat, idx);
-        const s = getPoint(stored, idx);
-
-        // Normalize each point relative to nose + eye scale
-        const cx = (c.x - nose.x)  / eyeDist;
-        const cy = (c.y - nose.y)  / eyeDist;
-        const sx = (s.x - noseS.x) / eyeDistS;
-        const sy = (s.y - noseS.y) / eyeDistS;
-
-        totalDist += Math.pow(cx - sx, 2) + Math.pow(cy - sy, 2);
-    }
-
-    const rmse = Math.sqrt(totalDist / KEY_INDICES.length);
-    console.log(`[FaceVerify] RMSE: ${rmse.toFixed(5)} | Threshold: 0.055`);
-
-    // Strict threshold — same person: ~0.01–0.04, different person: >0.07
-    return rmse < 0.055;
 }
+
+function euclideanDist(a, b) {
+    let sum = 0;
+    for (let i = 0; i < a.length; i++) sum += (a[i] - b[i]) ** 2;
+    return Math.sqrt(sum);
+}
+
+// Kept for backward compat — not used in new flow
+function getFaceRMSE() { return Infinity; }
+function compareMeshes() { return false; }
 
 let verificationState = { gpsVerified: false, faceVerified: false, manualApproved: false, faceTrialsLeft: 3 };
 
@@ -1722,10 +1702,11 @@ function startFaceVerification() {
 }
 
 async function verifyFace() {
-    const btn = document.getElementById("facePermissionBtn"), msg = document.getElementById("faceMessage"), vid = document.getElementById("video");
+    const btn = document.getElementById("facePermissionBtn");
+    const msg = document.getElementById("faceMessage");
+    const vid = document.getElementById("video");
     const countSpan = document.getElementById("faceTrialCount");
 
-    // No registered face — skip to manual
     if (!registeredMesh) {
         if (msg) msg.innerText = "⚠️ No face registered. Use manual verification.";
         verificationState.faceTrialsLeft = 0;
@@ -1733,54 +1714,111 @@ async function verifyFace() {
         return;
     }
 
+    if (!faceApiReady) {
+        if (msg) msg.innerText = "⏳ Face models loading, please wait...";
+        if (btn) { btn.style.display = "block"; btn.innerText = "🔄 Retry"; }
+        return;
+    }
+
     if (btn) btn.style.display = "none";
     if (msg) msg.innerText = "📷 Starting camera...";
 
+    // Load other descriptors lazily on first use
+    if (otherStudentMeshes.length === 0) {
+        loadOtherStudentDescriptors().catch(() => {});
+    }
+
     let stream = null;
     try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 } });
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "user", width: 640, height: 480 }
+        });
         vid.srcObject = stream;
         vid.style.display = "block";
+        vid.play().catch(() => {});
 
-        // Wait for video to be ready
-        await new Promise(r => { vid.onloadeddata = r; setTimeout(r, 2000); });
+        // Wait until video has real dimensions
+        await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error("Camera took too long to start")), 8000);
+            const check = setInterval(() => {
+                if (vid.readyState >= 2 && vid.videoWidth > 0 && vid.videoHeight > 0) {
+                    clearInterval(check); clearTimeout(timeout); resolve();
+                }
+            }, 100);
+        });
+
         if (msg) msg.innerText = "🔍 Scanning face — hold still...";
 
-        // Capture 5 frames over 2.5 seconds, require 3/5 matches
         const FRAMES = 5;
         const NEEDED = 3;
+        const MATCH_THRESHOLD = 0.5;   // face-api: same person < 0.5, different > 0.6
         let matches = 0;
         let noFaceCount = 0;
+        let spoofName = null;
+
+        const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
 
         for (let i = 0; i < FRAMES; i++) {
-            await new Promise(r => setTimeout(r, 500));
-            const res = await faceLandmarker.detectForVideo(vid, performance.now());
-            if (res?.faceLandmarks?.[0]) {
-                if (compareMeshes(res.faceLandmarks[0], registeredMesh)) {
-                    matches++;
-                }
-            } else {
-                noFaceCount++;
+            await new Promise(r => setTimeout(r, 600));
+            if (vid.videoWidth === 0 || vid.readyState < 2) { noFaceCount++; continue; }
+
+            if (msg) msg.innerText = `🔍 Scanning... ${i+1}/${FRAMES}`;
+
+            const detection = await faceapi
+                .detectSingleFace(vid, detectorOptions)
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (!detection) { noFaceCount++; continue; }
+
+            const currentDesc = detection.descriptor; // Float32Array 128-dim
+            const selfDist = euclideanDist(currentDesc, registeredMesh);
+
+            // Check against all other students
+            let bestOtherDist = Infinity;
+            let bestOtherName = null;
+            for (const other of otherStudentMeshes) {
+                const d = euclideanDist(currentDesc, other.descriptor);
+                if (d < bestOtherDist) { bestOtherDist = d; bestOtherName = other.name; }
             }
-            if (msg) msg.innerText = `🔍 Scanning... (${i+1}/${FRAMES})`;
+
+            console.log(`[FaceVerify] Frame ${i+1}: self=${selfDist.toFixed(4)}, bestOther=${bestOtherDist.toFixed(4)} (${bestOtherName || 'none'})`);
+
+            if (selfDist < MATCH_THRESHOLD && selfDist < bestOtherDist) {
+                // Matches self and is closer to self than any other student
+                matches++;
+                spoofName = null;
+            } else if (selfDist >= MATCH_THRESHOLD && bestOtherDist < MATCH_THRESHOLD) {
+                // Matches another student
+                spoofName = bestOtherName;
+                if (msg) msg.innerText = `⚠️ Another student's face detected${bestOtherName ? ` (${bestOtherName})` : ''}. Use your own face.`;
+            }
+            // else: face detected but doesn't match anyone — just doesn't count
         }
 
         vid.style.display = "none";
         stream.getTracks().forEach(t => t.stop());
 
-        console.log(`Face scan: ${matches}/${FRAMES} matches, ${noFaceCount} no-face frames`);
+        console.log(`[FaceVerify] Result: ${matches}/${FRAMES} matches`);
 
         if (noFaceCount >= FRAMES) {
-            throw new Error("No face detected. Ensure good lighting and face the camera.");
+            throw new Error("No face detected. Ensure good lighting and face the camera directly.");
+        }
+
+        if (spoofName) {
+            verificationState.faceTrialsLeft--;
+            if (countSpan) countSpan.innerText = verificationState.faceTrialsLeft;
+            throw new Error(`⚠️ Another student's face detected (${spoofName}). Only the account holder can mark attendance.`);
         }
 
         if (matches >= NEEDED) {
             verificationState.faceVerified = true;
+            if (msg) msg.innerText = `✅ Identity verified (${matches}/${FRAMES} frames)`;
             updateVerificationUI();
         } else {
             verificationState.faceTrialsLeft--;
             if (countSpan) countSpan.innerText = verificationState.faceTrialsLeft;
-            throw new Error(`Face not recognized (${matches}/${FRAMES} match). Ensure you are the registered user.`);
+            throw new Error(`Face not recognized (${matches}/${FRAMES} frames matched). Ensure you are the registered account holder.`);
         }
 
     } catch (e) {
@@ -1795,7 +1833,6 @@ async function verifyFace() {
         }
     }
 }
-
 const mReqBtn = document.getElementById("manualRequestBtn");
 if (mReqBtn) mReqBtn.onclick = async () => {
     verificationState.manualApproved = true; updateVerificationUI();
@@ -2232,3 +2269,99 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+
+/* ================= FACE RE-REGISTRATION ================= */
+
+async function checkFaceReregisterEnabled() {
+    try {
+        const snap = await getDoc(doc(db, "settings", "security"));
+        const enabled = snap.exists() && snap.data().faceReregisterEnabled === true;
+        const section = document.getElementById("faceReregisterSection");
+        if (section) section.style.display = enabled ? "block" : "none";
+    } catch (e) {
+        console.warn('checkFaceReregisterEnabled:', e);
+    }
+}
+
+let faceReregStream = null;
+
+document.getElementById("faceReregStartBtn")?.addEventListener("click", async () => {
+    const vid = document.getElementById("faceReregVideo");
+    const msg = document.getElementById("faceReregMsg");
+    const startBtn = document.getElementById("faceReregStartBtn");
+    const captureBtn = document.getElementById("faceReregCaptureBtn");
+    const cancelBtn = document.getElementById("faceReregCancelBtn");
+
+    if (!faceApiReady) {
+        if (msg) msg.innerText = "⏳ Face AI still loading, please wait...";
+        return;
+    }
+
+    try {
+        faceReregStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 } });
+        vid.srcObject = faceReregStream;
+        vid.style.display = "block";
+        vid.play();
+        if (msg) msg.innerText = "📷 Camera ready. Position your face clearly and click Capture.";
+        startBtn.style.display = "none";
+        captureBtn.style.display = "inline-block";
+        cancelBtn.style.display = "inline-block";
+    } catch (e) {
+        if (msg) msg.innerText = `❌ Camera error: ${e.message}`;
+    }
+});
+
+document.getElementById("faceReregCaptureBtn")?.addEventListener("click", async () => {
+    const vid = document.getElementById("faceReregVideo");
+    const msg = document.getElementById("faceReregMsg");
+    const captureBtn = document.getElementById("faceReregCaptureBtn");
+
+    if (!vid.srcObject) return;
+    if (msg) msg.innerText = "📸 Capturing face...";
+    captureBtn.disabled = true;
+
+    try {
+        const detectorOptions = new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.5 });
+        const detection = await faceapi
+            .detectSingleFace(vid, detectorOptions)
+            .withFaceLandmarks()
+            .withFaceDescriptor();
+
+        if (!detection) {
+            if (msg) msg.innerText = "❌ No face detected. Ensure good lighting and face the camera.";
+            captureBtn.disabled = false;
+            return;
+        }
+
+        const newDescriptor = Array.from(detection.descriptor);
+        await updateDoc(doc(db, "users", currentUser.uid), { faceDescriptor: newDescriptor });
+        registeredMesh = new Float32Array(newDescriptor);
+
+        if (msg) msg.innerText = "✅ Face re-registered successfully!";
+        if (faceReregStream) { faceReregStream.getTracks().forEach(t => t.stop()); faceReregStream = null; }
+        vid.style.display = "none";
+        vid.srcObject = null;
+
+        document.getElementById("faceReregStartBtn").style.display = "inline-block";
+        captureBtn.style.display = "none";
+        document.getElementById("faceReregCancelBtn").style.display = "none";
+        captureBtn.disabled = false;
+
+        setTimeout(() => { if (msg) msg.innerText = ""; }, 3000);
+    } catch (e) {
+        if (msg) msg.innerText = `❌ Error: ${e.message}`;
+        captureBtn.disabled = false;
+    }
+});
+
+document.getElementById("faceReregCancelBtn")?.addEventListener("click", () => {
+    const vid = document.getElementById("faceReregVideo");
+    const msg = document.getElementById("faceReregMsg");
+    if (faceReregStream) { faceReregStream.getTracks().forEach(t => t.stop()); faceReregStream = null; }
+    vid.style.display = "none";
+    vid.srcObject = null;
+    if (msg) msg.innerText = "";
+    document.getElementById("faceReregStartBtn").style.display = "inline-block";
+    document.getElementById("faceReregCaptureBtn").style.display = "none";
+    document.getElementById("faceReregCancelBtn").style.display = "none";
+});

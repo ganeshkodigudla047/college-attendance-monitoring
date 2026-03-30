@@ -11,6 +11,9 @@
 
 	<link rel="stylesheet" href="student-dashboard.css">
 
+	<!-- Face Recognition Library -->
+	<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
 	<script type="module" src="student-dashboard.js"></script>
 
 
@@ -479,6 +482,24 @@
 
 						<button id="addRequestBtn" class="centered-add-btn"
 							title="Request Personal Details Modification">+</button>
+					</div>
+
+					<!-- Face Re-Registration (shown only when super admin enables it) -->
+					<div id="faceReregisterSection" style="display:none; margin-top:20px; padding:18px 20px; border-radius:14px; border:1px solid rgba(255,255,255,0.15);">
+						<div style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
+							<span style="font-size:1.5rem;">🤳</span>
+							<div>
+								<div style="font-weight:700; font-size:15px;">Re-Register Face</div>
+								<div style="font-size:12px; opacity:0.65; margin-top:2px;">Update your face for attendance verification. Face the camera clearly in good lighting.</div>
+							</div>
+						</div>
+						<video id="faceReregVideo" autoplay muted playsinline style="display:none; width:100%; max-width:320px; border-radius:10px; margin-bottom:10px;"></video>
+						<div id="faceReregMsg" style="font-size:13px; margin-bottom:10px; opacity:0.8;"></div>
+						<div style="display:flex; gap:10px; flex-wrap:wrap;">
+							<button id="faceReregStartBtn" type="button" style="padding:10px 20px; border-radius:8px; border:none; background:#3b82f6; color:#fff; font-weight:700; cursor:pointer;">📷 Start Camera</button>
+							<button id="faceReregCaptureBtn" type="button" style="display:none; padding:10px 20px; border-radius:8px; border:none; background:#10b981; color:#fff; font-weight:700; cursor:pointer;">✅ Capture & Save</button>
+							<button id="faceReregCancelBtn" type="button" style="display:none; padding:10px 20px; border-radius:8px; border:1.5px solid rgba(239,68,68,0.5); background:transparent; color:#fca5a5; font-weight:700; cursor:pointer;">✕ Cancel</button>
+						</div>
 					</div>
 				</div>
 
