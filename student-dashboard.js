@@ -409,7 +409,7 @@ window.showPage = function (pageId, isBack = false) {
                 return;
             }
         }
-        if (window.todayAttendanceStatuses && window.todayAttendanceStatuses[currentSession]) {
+        if (window.todayAttendanceStatuses && window.todayAttendanceStatuses[currentSession] === "Present") {
             alert(`You have already marked your attendance for the ${currentSession} session.`);
             return;
         }
@@ -480,7 +480,7 @@ if (els.homeMarkBtn) {
                 return;
             }
         }
-        if (window.todayAttendanceStatuses && window.todayAttendanceStatuses[currentSession]) {
+        if (window.todayAttendanceStatuses && window.todayAttendanceStatuses[currentSession] === "Present") {
             alert(`You have already marked your attendance for the ${currentSession} session.`);
             return;
         }
@@ -1509,15 +1509,31 @@ async function loadFaceModels() {
 }
 
 async function loadFaceDescriptor() {
-    const snap = await getDoc(doc(db, "users", currentUser.uid));
-    const data = snap.data(); if (data && data.faceDescriptor) registeredMesh = data.faceDescriptor;
+    try {
+        const snap = await getDoc(doc(db, "users", currentUser.uid));
+        const data = snap.data();
+        if (data && Array.isArray(data.faceDescriptor) && data.faceDescriptor.length > 0) {
+            registeredMesh = data.faceDescriptor;
+            console.log(`✅ Face descriptor loaded: ${registeredMesh.length} values`);
+        } else {
+            console.warn('⚠️ No face descriptor found for this user — face verification will fail');
+            registeredMesh = null;
+        }
+    } catch (e) {
+        console.error('loadFaceDescriptor error:', e);
+        registeredMesh = null;
+    }
 }
 
 function compareMeshes(current, stored) {
-    if (!current || !stored) return false;
+    if (!current || !stored || !Array.isArray(stored)) return false;
     const flat = current.flatMap(l => [l.x, l.y, l.z]);
-    let dist = 0; for (let i = 0; i < flat.length; i++) dist += Math.pow(flat[i] - stored[i], 2);
-    return Math.sqrt(dist / (flat.length / 3)) < 0.15;
+    if (flat.length !== stored.length) return false;
+    let dist = 0;
+    for (let i = 0; i < flat.length; i++) dist += Math.pow(flat[i] - stored[i], 2);
+    const rmse = Math.sqrt(dist / (flat.length / 3));
+    console.log('Face RMSE:', rmse.toFixed(4)); // debug — remove after testing
+    return rmse < 0.042; // strict threshold — only matches the registered face
 }
 
 let verificationState = { gpsVerified: false, faceVerified: false, manualApproved: false, faceTrialsLeft: 3 };
@@ -1542,31 +1558,68 @@ function updateVerificationUI() {
     const gBtn = document.getElementById("gpsPermissionBtn"), fBtn = document.getElementById("facePermissionBtn"), mBtn = document.getElementById("manualRequestBtn");
     const markBtn = document.getElementById("markBtn");
 
+    // ── Reset all step states first ──
+    gpsStep.classList.remove("completed", "failed");
+    faceStep.classList.remove("completed", "failed");
+    manualStep.classList.remove("completed", "failed");
+    setSafeText(gStatus, "Pending"); setSafeText(fStatus, "Waiting"); setSafeText(mStatus, "Not Needed");
+    setSafeText(gMsg, ""); setSafeText(fMsg, ""); if (mMsg) setSafeText(mMsg, "");
+    if (gBtn) gBtn.style.display = "block";
+    if (fBtn) fBtn.style.display = "none";
+    if (mBtn) mBtn.style.display = "none";
+    faceStep.classList.add("disabled");
+    manualStep.classList.add("disabled");
+
+    // ── GPS ──
     if (verificationState.gpsVerified) {
-        gpsStep.classList.add("completed"); setSafeText(gStatus, "✓ Verified"); setSafeText(gMsg, "Location verified"); gBtn.style.display = "none";
-        faceStep.classList.remove("disabled"); setSafeText(fStatus, "Ready");
+        gpsStep.classList.add("completed");
+        setSafeText(gStatus, "✓ Verified");
+        setSafeText(gMsg, "Location verified");
+        if (gBtn) gBtn.style.display = "none";
+        faceStep.classList.remove("disabled");
+        setSafeText(fStatus, "Ready");
+        if (fBtn) fBtn.style.display = "block";
     }
 
+    // ── Face ──
     if (verificationState.faceVerified) {
-        faceStep.classList.add("completed"); setSafeText(fStatus, "✓ Verified"); fBtn.style.display = "none";
-        document.getElementById("faceTrials").style.display = "none";
-        manualStep.classList.remove("disabled"); mStatus.innerText = "Not Needed";
-    } else if (verificationState.faceTrialsLeft <= 0) {
+        faceStep.classList.add("completed");
+        setSafeText(fStatus, "✓ Verified");
+        setSafeText(fMsg, "Face matched");
+        if (fBtn) fBtn.style.display = "none";
+        const trialsDiv = document.getElementById("faceTrials");
+        if (trialsDiv) trialsDiv.style.display = "none";
+        manualStep.classList.remove("disabled");
+        setSafeText(mStatus, "Not Needed");
+    } else if (verificationState.gpsVerified && verificationState.faceTrialsLeft <= 0) {
         faceStep.classList.add("failed");
         setSafeText(fStatus, "✗ Failed");
-        fBtn.style.display = "none";
-        document.getElementById("faceTrials").style.display = "block";
-        document.getElementById("faceTrialCount").innerText = "0";
-
+        setSafeText(fMsg, "All attempts used");
+        if (fBtn) fBtn.style.display = "none";
+        const trialsDiv = document.getElementById("faceTrials");
+        if (trialsDiv) { trialsDiv.style.display = "block"; }
+        const countSpan = document.getElementById("faceTrialCount");
+        if (countSpan) countSpan.innerText = "0";
         manualStep.classList.remove("disabled");
-        mBtn.style.display = "block";
-        mStatus.innerText = "Available";
+        setSafeText(mStatus, "Required");
+        if (mBtn) mBtn.style.display = "block";
+        if (mMsg) setSafeText(mMsg, "Please request manual approval");
+    } else if (verificationState.gpsVerified) {
+        // GPS done, face pending
+        const trialsDiv = document.getElementById("faceTrials");
+        if (trialsDiv) trialsDiv.style.display = "block";
+        const countSpan = document.getElementById("faceTrialCount");
+        if (countSpan) countSpan.innerText = verificationState.faceTrialsLeft;
     }
 
+    // ── Manual ──
     if (verificationState.manualApproved) {
-        manualStep.classList.add("completed"); setSafeText(mStatus, "✓ Approved"); mBtn.style.display = "none";
+        manualStep.classList.add("completed");
+        setSafeText(mStatus, "✓ Approved");
+        if (mBtn) mBtn.style.display = "none";
     }
 
+    // ── Mark button ──
     const sess = getCurrentSession();
     const active = sess === "FN" || sess === "AN";
     const ok = (verificationState.gpsVerified && (verificationState.faceVerified || verificationState.manualApproved));
@@ -1621,6 +1674,14 @@ function startFaceVerification() {
 async function verifyFace() {
     const btn = document.getElementById("facePermissionBtn"), msg = document.getElementById("faceMessage"), vid = document.getElementById("video");
     const countSpan = document.getElementById("faceTrialCount");
+
+    // No registered face — skip to manual
+    if (!registeredMesh) {
+        if (msg) msg.innerText = "⚠️ No face registered. Use manual verification.";
+        verificationState.faceTrialsLeft = 0;
+        updateVerificationUI();
+        return;
+    }
 
     if (btn) btn.style.display = "none";
     try {
