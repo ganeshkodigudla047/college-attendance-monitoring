@@ -3129,10 +3129,7 @@ function buildAttendanceRows() {
 	const collegeF = (attendanceCollegeFilter && attendanceCollegeFilter.value) || "all";
 
 	if (!targetDate) {
-		return {
-			rows: [],
-			emptyMessage: "Select a date to view attendance across colleges."
-		};
+		return { rows: [], emptyMessage: "Select a date to view attendance across colleges." };
 	}
 
 	const studentAttendanceMap = {};
@@ -3150,69 +3147,62 @@ function buildAttendanceRows() {
 	Object.values(studentAttendanceMap).forEach(entry => {
 		const student = entry.student;
 		const collegeId = student.collegeId || "unknown";
-		const collegeName = student.collegeName || attendanceCollegeOptions.find(college => college.id === collegeId)?.name || "Unknown College";
+		const collegeName = student.collegeName || attendanceCollegeOptions.find(c => c.id === collegeId)?.name || "Unknown College";
 
 		if (collegeF !== "all" && collegeId !== collegeF) return;
 
 		if (student.createdAt) {
 			try {
 				const regDate = student.createdAt.toDate ? student.createdAt.toDate() : new Date(student.createdAt);
-				const regStr = `${regDate.getFullYear()}-${String(regDate.getMonth() + 1).padStart(2, '0')}-${String(regDate.getDate()).padStart(2, '0')}`;
+				const regStr = `${regDate.getFullYear()}-${String(regDate.getMonth()+1).padStart(2,'0')}-${String(regDate.getDate()).padStart(2,'0')}`;
 				if (regStr > targetDate) return;
-			} catch (error) {
-				console.warn("Date parse error for student", student.id, error);
-			}
+			} catch (e) {}
 		}
 
 		const holidayData = attendanceHolidayMap[`${collegeId}_${targetDate}`];
-		const dateObj = new Date(`${targetDate}T00:00:00`);
-		const isSunday = dateObj.getDay() === 0;
+		const isSunday = new Date(`${targetDate}T00:00:00`).getDay() === 0;
+		const isHoliday = isSunday || !!holidayData;
+		const holidayLabel = isSunday ? "SUNDAY" : (holidayData?.reason || "HOLIDAY").toUpperCase();
 
-		["FN", "AN"].forEach(session => {
-			const record = entry[session];
-			const isHoliday = isSunday || !!holidayData;
-			const statusLabel = isHoliday ? (isSunday ? "SUNDAY" : (holidayData?.reason || "HOLIDAY").toUpperCase()) : ((record?.status || "Absent").toUpperCase());
+		const fnRec = entry.FN;
+		const anRec = entry.AN;
 
-			const searchText = [
-				student.name,
-				student.studentId,
-				student.roll,
-				student.department,
-				collegeName,
-				session
-			].filter(Boolean).join(" ").toLowerCase();
-			if (q && !searchText.includes(q)) return;
+		const fnStatus = isHoliday ? holidayLabel : ((fnRec?.status || "Absent").toUpperCase());
+		const anStatus = isHoliday ? holidayLabel : ((anRec?.status || "Absent").toUpperCase());
 
-			const stats = getAttendanceData(student.id, student.createdAt);
-			rows.push({
-				index: rows.length + 1,
-				uid: student.id,
-				collegeName,
-				name: student.name || "-",
-				date: targetDate,
-				roll: student.studentId || student.roll || "-",
-				department: student.department || "-",
-				year: student.year || "-",
-				session,
-				gps: isHoliday ? "-" : (record?.gpsStatus || "-"),
-				face: isHoliday ? "-" : (record?.faceStatus || "-"),
-				status: statusLabel,
-				percentage: `${stats.percent}%`,
-				eligible: stats.eligible
-			});
+		const searchText = [student.name, student.studentId, student.roll, student.department, collegeName]
+			.filter(Boolean).join(" ").toLowerCase();
+		if (q && !searchText.includes(q)) return;
+
+		const stats = getAttendanceData(student.id, student.createdAt);
+
+		rows.push({
+			index: rows.length + 1,
+			uid: student.id,
+			collegeName,
+			name: student.name || "-",
+			date: targetDate,
+			roll: student.studentId || student.roll || "-",
+			department: student.department || "-",
+			year: student.year || "-",
+			fnStatus,
+			anStatus,
+			fnGps:  isHoliday ? "-" : (fnRec?.gpsStatus  || "-"),
+			anGps:  isHoliday ? "-" : (anRec?.gpsStatus  || "-"),
+			fnFace: isHoliday ? "-" : (fnRec?.faceStatus || "-"),
+			anFace: isHoliday ? "-" : (anRec?.faceStatus || "-"),
+			percentage: `${stats.percent}%`,
+			eligible: stats.eligible,
+			percentageValue: stats.percent
 		});
 	});
 
 	rows.sort((a, b) => {
 		if (a.collegeName !== b.collegeName) return a.collegeName.localeCompare(b.collegeName);
-		if (a.name !== b.name) return a.name.localeCompare(b.name);
-		return a.session.localeCompare(b.session);
+		return a.name.localeCompare(b.name);
 	});
 
-	return {
-		rows,
-		emptyMessage: "No attendance records match the selected filters."
-	};
+	return { rows, emptyMessage: "No attendance records match the selected filters." };
 }
 
 async function loadAttendance() {
@@ -3257,7 +3247,7 @@ async function loadAttendance() {
 		renderAttendance();
 	} catch (err) {
 		console.error("loadAttendance error", err);
-		safeSet(attTable, '<tr><td colspan="12">Failed to load attendance</td></tr>', "html");
+		safeSet(attTable, '<tr><td colspan="14">Failed to load attendance</td></tr>', "html");
 	}
 }
 
@@ -3267,11 +3257,14 @@ function renderAttendance() {
 	const sortedRows = sortAttendanceRows(result.rows);
 
 	if (sortedRows.length === 0) {
-		safeSet(attTable, `<tr><td colspan="12" style="text-align:center; padding:40px; color:#64748b;">${escapeHtml(result.emptyMessage)}</td></tr>`, "html");
+		safeSet(attTable, `<tr><td colspan="14" style="text-align:center; padding:40px; color:#64748b;">${escapeHtml(result.emptyMessage)}</td></tr>`, "html");
 		return;
 	}
 
-	const rowsHtml = sortedRows.map((row, index) => `
+	const rowsHtml = sortedRows.map((row, index) => {
+		const fnColor = row.fnStatus === "PRESENT" ? "#16a34a" : row.fnStatus === "ABSENT" ? "#dc2626" : "#7c3aed";
+		const anColor = row.anStatus === "PRESENT" ? "#16a34a" : row.anStatus === "ABSENT" ? "#dc2626" : "#7c3aed";
+		return `
 		<tr onclick="openUserDetails('${row.uid}')">
 			<td>${index + 1}</td>
 			<td>${escapeHtml(row.collegeName)}</td>
@@ -3280,13 +3273,15 @@ function renderAttendance() {
 			<td>${escapeHtml(row.roll)}</td>
 			<td>${escapeHtml(row.department)}</td>
 			<td>${escapeHtml(row.year)}</td>
-			<td>${escapeHtml(row.session)}</td>
-			<td>${escapeHtml(row.gps)}</td>
-			<td>${escapeHtml(row.face)}</td>
-			<td style="font-weight:700; color:${row.status === "PRESENT" ? "#16a34a" : row.status === "ABSENT" ? "#dc2626" : "#7c3aed"};">${escapeHtml(row.status)}</td>
-			<td style="font-weight:700; color:${row.eligible ? "#28a745" : "#dc3545"}">${escapeHtml(row.percentage)}</td>
-		</tr>
-	`).join("");
+			<td style="font-weight:700; color:${fnColor};">${escapeHtml(row.fnStatus)}</td>
+			<td style="font-weight:700; color:${anColor};">${escapeHtml(row.anStatus)}</td>
+			<td>${escapeHtml(row.fnGps)}</td>
+			<td>${escapeHtml(row.anGps)}</td>
+			<td>${escapeHtml(row.fnFace)}</td>
+			<td>${escapeHtml(row.anFace)}</td>
+			<td style="font-weight:700; color:${row.eligible ? '#28a745' : '#dc3545'}">${escapeHtml(row.percentage)}</td>
+		</tr>`;
+	}).join("");
 
 	safeSet(attTable, rowsHtml, "html");
 }
@@ -7537,3 +7532,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+
