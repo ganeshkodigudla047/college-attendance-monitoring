@@ -923,15 +923,12 @@
 			<div id="settingsSubmenu" class="submenu hidden" aria-hidden="true">
 				<ul>
 					<li id="basicSettingsToggle">
-						<span>Basic Settings</span>
+						<span>🔒 Security</span>
 						<span style="font-size: 10px;">▼</span>
 					</li>
 					<div id="basicSettingsSubmenu" class="submenu hidden">
 						<ul>
-							<li data-sec="timing"><span>Timing</span></li>
-							<li data-sec="gps"><span>GPS Configuration</span></li>
-							<li data-sec="holiday"><span>Holiday Management</span></li>
-							<li data-sec="security"><span>🔒 Security & Permissions</span></li>
+							<li data-sec="security"><span>Security & Permissions</span></li>
 						</ul>
 					</div>
 					<li id="advancedSettingsToggle">
@@ -944,7 +941,7 @@
 							<li data-sec="bgaudit"><span>🖼️ Background Audit</span></li>
 							<li data-sec="platformbg"><span>🌐 Platform Background</span></li>
 							<li data-sec="superadminbg"><span>🎨 My Dashboard BG</span></li>
-						<li data-sec="admanage"><span>📢 Advertisement</span></li>
+							<li data-sec="admanage"><span>📢 Advertisement</span></li>
 						</ul>
 					</div>
 					<li id="emailSettingsToggle">
@@ -1114,34 +1111,36 @@
 
 			</div>
 
-			<!-- System Activity -->
-			<div class="sa-activity-card">
-				<div class="sa-activity-header">
-					<div class="left">
-						<div class="icon">📋</div>
-						<div>
-							<h3>System Activity</h3>
-							<p class="sub">Today’s events · cleared each day</p>
-						</div>
-					</div>
-					<div class="sa-activity-actions">
-						<button type="button" id="systemActivityRefresh">🔄 Refresh</button>
-					</div>
-				</div>
-				<div class="table-responsive">
-					<table class="sa-activity-table">
-						<thead>
-							<tr>
-								<th>Time</th>
-								<th>Source</th>
-								<th>Activity</th>
-							</tr>
-						</thead>
-						<tbody id="recentActivityBody">
-							<tr><td colspan="3" style="text-align:center;">Loading...</td></tr>
-						</tbody>
-					</table>
-				</div>
+<!-- System Activity -->
+<div class="sa-activity-card">
+<div class="sa-activity-header">
+<div class="left">
+<div class="icon">📋</div>
+<div>
+<h3>System Activity</h3>
+<p class="sub">Today's events — registrations, attendance, requests &amp; more</p>
+</div>
+</div>
+<div class="sa-activity-actions">
+<button type="button" id="systemActivityRefresh">🔄 Refresh</button>
+</div>
+</div>
+<div class="table-responsive">
+<table class="sa-activity-table">
+<thead>
+<tr>
+<th>Time</th>
+<th>Type</th>
+<th>College</th>
+<th>Activity</th>
+</tr>
+</thead>
+<tbody id="recentActivityBody">
+<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
+</tbody>
+</table>
+</div>
+</div>
 			</div>
 		</section>
 
@@ -1815,6 +1814,14 @@
 				<p class="status-message">Set the start and end times for Forenoon (FN) and Afternoon (AN) sessions.
 					Students can only mark attendance during these active windows.</p>
 
+				<!-- College Filter -->
+				<div style="margin-bottom:20px;">
+					<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Apply to College</label>
+					<select id="timingCollegeFilter" style="max-width:320px; margin-bottom:0;">
+						<option value="global">🌐 All Colleges (Global Default)</option>
+					</select>
+				</div>
+
 				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px;">
 					<!-- FN TIMING -->
 					<div class="admin-setting-item" style="padding: 24px;">
@@ -1863,6 +1870,14 @@
 				<div class="status-title">Geofencing Configuration</div>
 				<p class="status-message">Set the center coordinates and radius for the college attendance zone.
 					Students must be within this area to mark their presence.</p>
+
+				<!-- College Filter -->
+				<div style="margin-bottom:20px;">
+					<label style="font-size:13px; font-weight:600; display:block; margin-bottom:6px;">Apply to College</label>
+					<select id="gpsCollegeFilter" style="max-width:320px; margin-bottom:0;">
+						<option value="global">🌐 All Colleges (Global Default)</option>
+					</select>
+				</div>
 
 				<div class="admin-setting-item" style="margin-bottom: 20px;">
 					<label class="admin-setting-label">Center Latitude</label>
@@ -1928,665 +1943,33 @@
 
 		<!-- EMAIL REMINDER MANAGEMENT -->
 		<section id="emailreminders" class="page section">
-			<div class="greeting-container">
-				<h2>📧 Email Reminder Management</h2>
-				<p style="color: #64748b; margin-top: 8px;">Automated email notification system for student attendance
-				</p>
+			<h2>📧 Email Reminder Management</h2>
+			<p style="opacity:0.65; margin-bottom:24px;">Email reminders run automatically from each student's browser — 10 minutes before their session ends. Below is the per-college configuration overview.</p>
+
+			<!-- College filter -->
+			<div style="margin-bottom:20px; display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+				<select id="emailReminderCollegeFilter" style="max-width:300px; margin-bottom:0;">
+					<option value="all">🌐 All Colleges</option>
+				</select>
+				<button id="refreshEmailReminderStats" class="btn btn-secondary" style="margin-bottom:0;">🔄 Refresh</button>
 			</div>
 
-			<!-- Main Dashboard Grid -->
-			<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 24px;">
-
-				<!-- Left Column: Control Panel -->
-				<div style="display: flex; flex-direction: column; gap: 24px;">
-
-					<!-- Quick Toggle Card -->
-					<div
-						style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 28px; border-radius: 16px; box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3); position: relative; overflow: hidden;">
-						<div
-							style="position: absolute; top: -20px; right: -20px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.1); border-radius: 50%;">
-						</div>
-						<div
-							style="position: absolute; bottom: -30px; left: -30px; width: 150px; height: 150px; background: rgba(255, 255, 255, 0.05); border-radius: 50%;">
-						</div>
-
-						<div style="position: relative; z-index: 1;">
-							<div
-								style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-								<div>
-									<h3 style="margin: 0; color: white; font-size: 20px; font-weight: 600;">System
-										Status</h3>
-									<p style="margin: 4px 0 0 0; color: rgba(255, 255, 255, 0.8); font-size: 13px;">
-										Control email reminder automation</p>
-								</div>
-								<div
-									style="width: 60px; height: 60px; background: rgba(255, 255, 255, 0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 28px; backdrop-filter: blur(10px);">
-									⚡
-								</div>
-							</div>
-
-							<div
-								style="display: flex; align-items: center; gap: 16px; background: rgba(255, 255, 255, 0.15); padding: 16px; border-radius: 12px; backdrop-filter: blur(10px);">
-								<label style="display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1;">
-									<div
-										style="position: relative; width: 56px; height: 32px; background: rgba(255, 255, 255, 0.3); border-radius: 16px; transition: all 0.3s;">
-										<input type="checkbox" id="emailRemindersToggle" checked
-											style="opacity: 0; width: 0; height: 0;">
-										<div
-											style="position: absolute; top: 4px; left: 4px; width: 24px; height: 24px; background: transparent; border-radius: 50%; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);">
-										</div>
-									</div>
-									<div>
-										<span
-											style="color: white; font-weight: 600; font-size: 15px; display: block;">Email
-											Reminders</span>
-										<span style="color: rgba(255, 255, 255, 0.7); font-size: 12px;"
-											id="toggleStatus">Active</span>
-									</div>
-								</label>
-								<div
-									style="width: 12px; height: 12px; background: #10b981; border-radius: 50%; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3); animation: pulse 2s infinite;">
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Configuration Card -->
-					<div
-						style="background: transparent; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-						<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
-							<div
-								style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px;">
-								⚙️
-							</div>
-							<div>
-								<h3 style="margin: 0; color: #1e293b; font-size: 18px; font-weight: 600;">Configuration
-								</h3>
-								<p style="margin: 2px 0 0 0; color: #64748b; font-size: 13px;">Customize reminder
-									settings</p>
-							</div>
-						</div>
-
-						<div style="display: grid; gap: 20px;">
-							<!-- Reminder Time -->
-							<div
-								style="padding: 20px; background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border-radius: 12px; border: 2px solid #e2e8f0;">
-								<label
-									style="display: block; margin-bottom: 12px; color: #334155; font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-									<span style="font-size: 18px;">⏰</span>
-									Reminder Timing
-								</label>
-								<div style="display: flex; align-items: center; gap: 12px;">
-									<input type="number" id="emailReminderMinutes" value="10" min="5" max="60"
-										style="flex: 1; padding: 12px 16px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; font-weight: 600; color: #1e293b; transition: all 0.3s;">
-									<span
-										style="color: #64748b; font-size: 14px; font-weight: 500; white-space: nowrap;">minutes
-										before</span>
-								</div>
-								<p style="margin: 10px 0 0 0; color: #64748b; font-size: 12px; line-height: 1.5;">
-									⏱️ Reminders will be sent this many minutes before each session ends
-								</p>
-							</div>
-
-							<!-- Session Times Info -->
-							<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-								<div
-									style="padding: 16px; background: #eff6ff; border-radius: 10px; border-left: 4px solid #3b82f6;">
-									<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">FN Session Ends
-									</div>
-									<div style="font-size: 18px; font-weight: 700; color: #1e40af;" id="fnReminderTime">
-										--:--</div>
-									<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Reminder time</div>
-								</div>
-								<div
-									style="padding: 16px; background: transparent; border-radius: 10px; border-left: 4px solid #f59e0b;">
-									<div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">AN Session Ends
-									</div>
-									<div style="font-size: 18px; font-weight: 700; color: #d97706;" id="anReminderTime">
-										--:--</div>
-									<div style="font-size: 11px; color: #64748b; margin-top: 2px;">Reminder time</div>
-								</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- Action Buttons -->
-					<div
-						style="background: transparent; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-						<h3
-							style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-							<span style="font-size: 20px;">🚀</span>
-							Quick Actions
-						</h3>
-
-						<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-							<button id="saveEmailSettings"
-								style="padding: 14px 20px; background: linear-gradient(135deg, #2563eb, #1d4ed8); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-								<span style="font-size: 16px;">💾</span>
-								Save Settings
-							</button>
-							<button id="testEmailReminderBtn"
-								style="padding: 14px 20px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-								<span style="font-size: 16px;">📤</span>
-								Test Email
-							</button>
-							<button id="bulkTestEmailBtn"
-								style="padding: 14px 20px; background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-								<span style="font-size: 16px;">📧</span>
-								Test All
-							</button>
-							<button id="bulkReminderBtn"
-								style="padding: 14px 20px; background: #3b82f6; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 600; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3); transition: all 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-								<span style="font-size: 16px;">🚨</span>
-								Bulk Send
-							</button>
-						</div>
-					</div>
-				</div>
-
-				<!-- Right Column: Statistics & Info -->
-				<div style="display: flex; flex-direction: column; gap: 24px;">
-
-					<!-- Statistics Card -->
-					<div
-						style="background: transparent; padding: 24px; border-radius: 16px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-						<h3
-							style="margin: 0 0 20px 0; color: #1e293b; font-size: 18px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
-							<span style="font-size: 20px;">📊</span>
-							Statistics
-						</h3>
-
-						<div style="display: flex; flex-direction: column; gap: 16px;">
-							<div
-								style="padding: 20px; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-radius: 12px; border-left: 4px solid #3b82f6; position: relative; overflow: hidden;">
-								<div
-									style="position: absolute; top: -10px; right: -10px; width: 60px; height: 60px; background: rgba(59, 130, 246, 0.1); border-radius: 50%;">
-								</div>
-								<div
-									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-									Total Sent</div>
-								<div style="font-size: 32px; font-weight: 800; color: #1e40af; position: relative; z-index: 1;"
-									id="totalEmailsSent">0</div>
-								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">📨 All time emails</div>
-							</div>
-
-							<div
-								style="padding: 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-radius: 12px; border-left: 4px solid #10b981; position: relative; overflow: hidden;">
-								<div
-									style="position: absolute; top: -10px; right: -10px; width: 60px; height: 60px; background: rgba(16, 185, 129, 0.1); border-radius: 50%;">
-								</div>
-								<div
-									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-									Today</div>
-								<div style="font-size: 32px; font-weight: 800; color: #059669; position: relative; z-index: 1;"
-									id="todayEmailsSent">0</div>
-								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">✅ Sent today</div>
-							</div>
-
-							<div
-								style="padding: 20px; background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%); border-radius: 12px; border-left: 4px solid #f59e0b;">
-								<div
-									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-									Status</div>
-								<div style="font-size: 16px; font-weight: 700; color: #d97706;" id="emailConfigStatus">
-									Ready</div>
-								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">🟢 System operational
-								</div>
-							</div>
-
-							<div
-								style="padding: 20px; background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); border-radius: 12px; border-left: 4px solid #8b5cf6;">
-								<div
-									style="font-size: 11px; color: #64748b; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
-									Last Sent</div>
-								<div style="font-size: 13px; font-weight: 700; color: #7c3aed; line-height: 1.4;"
-									id="lastEmailSent">No emails sent</div>
-								<div style="font-size: 12px; color: #64748b; margin-top: 4px;">🕐 Recent activity</div>
-							</div>
-						</div>
-					</div>
-
-					<!-- System Info -->
-					<div
-						style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); padding: 24px; border-radius: 16px; border: 2px solid #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);">
-						<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
-							<div
-								style="width: 40px; height: 40px; background: #10b981; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
-								ℹ️
-							</div>
-							<h4 style="margin: 0; color: #065f46; font-size: 16px; font-weight: 700;">System Information
-							</h4>
-						</div>
-						<div style="color: #065f46; font-size: 13px; line-height: 1.8;">
-							<div
-								style="display: flex; gap: 8px; margin-bottom: 12px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
-								<span style="font-size: 16px;">📅</span>
-								<div>
-									<strong style="display: block; margin-bottom: 2px;">Automatic Schedule</strong>
-									<span style="opacity: 0.9;" id="scheduleInfo">Loading timing configuration...</span>
-								</div>
-							</div>
-							<div
-								style="display: flex; gap: 8px; margin-bottom: 12px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
-								<span style="font-size: 16px;">👥</span>
-								<div>
-									<strong style="display: block; margin-bottom: 2px;">Target Recipients</strong>
-									<span style="opacity: 0.9;">Students without attendance for current session</span>
-								</div>
-							</div>
-							<div
-								style="display: flex; gap: 8px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
-								<span style="font-size: 16px;">✉️</span>
-								<div>
-									<strong style="display: block; margin-bottom: 2px;">Email Content</strong>
-									<span style="opacity: 0.9;">Personalized with name, session & attendance link</span>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
+			<!-- Per-college cards -->
+			<div id="emailReminderCollegeList" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px;">
+				<div style="text-align:center; padding:40px; opacity:0.5;">Loading...</div>
 			</div>
 
-			<style>
-				@keyframes pulse {
-
-					0%,
-					100% {
-						opacity: 1;
-					}
-
-					50% {
-						opacity: 0.5;
-					}
-				}
-
-				#emailRemindersToggle:checked+div {
-					background: #10b981 !important;
-					transform: translateX(24px);
-				}
-
-				#emailReminderMinutes:focus {
-					border-color: #667eea;
-					outline: none;
-					box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-				}
-
-				button:hover {
-					transform: translateY(-2px);
-					box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
-				}
-
-				button:active {
-					transform: translateY(0);
-				}
-
-				@media (max-width: 1024px) {
-					div[style*="grid-template-columns: 2fr 1fr"] {
-						grid-template-columns: 1fr !important;
-					}
-				}
-			</style>
-		</section>
-
-		<!-- HOLIDAY -->
-
-		<section id="holiday" class="page section">
-
-			<h2>Holiday</h2>
-
-			<label for="holidayMode">Mode:</label>
-			<select id="holidayMode">
-				<option value="single">Single Day</option>
-				<option value="multiple">Multiple Days</option>
-			</select>
-
-			<div id="singleHoliday">
-				<label for="holidayDate">Date:</label>
-				<input type="date" id="holidayDate">
-			</div>
-
-			<div id="rangeHoliday" class="hidden">
-				<label for="holidayStart">From:</label>
-				<input type="date" id="holidayStart">
-				<label for="holidayEnd">To:</label>
-				<input type="date" id="holidayEnd">
-			</div>
-
-			<input id="holidayReason" placeholder="Reason" aria-label="Holiday reason">
-
-			<button id="addHoliday" type="button">Add</button>
-
-		</section>
-
-
-		<!-- INVITE ADMIN / PRINCIPAL -->
-		<section id="invite" class="page section">
-			<style>
-				.access-management-container {
-					display: flex;
-					flex-direction: column;
-					gap: 32px;
-					max-width: 1000px;
-					margin: 0 auto;
-					padding-top: 20px;
-				}
-
-				.provisioning-card {
-					background: transparent;
-					border-radius: 12px;
-					padding: 32px;
-					box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-					border: 1px solid rgba(255,255,255,0.15);
-				}
-
-				.provisioning-card h3 {
-					font-size: 18px;
-					color: #1e293b;
-					margin-bottom: 8px;
-					font-weight: 700;
-				}
-
-				.provisioning-card p {
-					color: #64748b;
-					font-size: 14px;
-					margin-bottom: 24px;
-				}
-
-				.invite-input-group {
-					display: grid;
-					grid-template-columns: 2fr 1fr auto;
-					gap: 16px;
-					align-items: flex-end;
-				}
-
-				@media (max-width: 768px) {
-					.invite-input-group {
-						grid-template-columns: 1fr;
-					}
-				}
-
-				.invite-field {
-					display: flex;
-					flex-direction: column;
-					gap: 6px;
-				}
-
-				.invite-field label {
-					font-size: 13px;
-					font-weight: 600;
-					color: #475569;
-				}
-
-				.invite-field input,
-				.invite-field select {
-					padding: 12px;
-					border: 1px solid #e2e8f0;
-					border-radius: 8px;
-					font-size: 15px;
-					transition: border-color 0.2s, box-shadow 0.2s;
-					margin: 0;
-					width: 100%;
-				}
-
-				.invite-field input:focus,
-				.invite-field select:focus {
-					outline: none;
-					border-color: #3b82f6;
-					box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-				}
-
-				.audit-log-card {
-					background: transparent;
-					border-radius: 12px;
-					padding: 24px;
-					border: 1px solid rgba(255,255,255,0.15);
-					box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-				}
-
-				.audit-log-card h3 {
-					font-size: 16px;
-					color: #1e293b;
-					margin-bottom: 16px;
-					font-weight: 700;
-				}
-
-				.invite-table {
-					width: 100%;
-					border-collapse: separate;
-					border-spacing: 0;
-					font-size: 14px;
-				}
-
-				.invite-table th {
-					background: transparent;
-					color: #64748b;
-					font-weight: 600;
-					text-transform: uppercase;
-					letter-spacing: 0.025em;
-					font-size: 11px;
-					padding: 12px 16px;
-					text-align: left;
-					border-bottom: 2px solid rgba(255,255,255,0.15);
-				}
-
-				.invite-table td {
-					padding: 16px;
-					border-bottom: 1px solid #f1f5f9;
-					color: #334155;
-					text-align: left;
-				}
-
-				.status-badge {
-					padding: 4px 10px;
-					border-radius: 99px;
-					font-size: 11px;
-					font-weight: 700;
-					text-transform: uppercase;
-				}
-
-				.status-pending {
-					background: #fff7ed;
-					color: #9a3412;
-				}
-
-				.status-expired {
-					background: #fef2f2;
-					color: #991b1b;
-				}
-
-				.status-registered {
-					background: #f0fdf4;
-					color: #166534;
-				}
-
-				.revoke-btn {
-					background: transparent;
-					color: #ef4444;
-					border: 1px solid #fee2e2;
-					padding: 6px 12px;
-					border-radius: 6px;
-					font-weight: 600;
-					font-size: 12px;
-					transition: all 0.2s;
-				}
-
-				.revoke-btn:hover {
-					background: #fef2f2;
-					border-color: #fecaca;
-				}
-
-				.audit_log_header {
-					display: flex;
-					justify-content: space-between;
-					align-items: center;
-					margin-bottom: 16px;
-				}
-
-				.refresh-btn {
-					background: #f1f5f9;
-					color: #475569;
-					border: 1px solid #e2e8f0;
-					padding: 6px 12px;
-					border-radius: 6px;
-					font-size: 14px;
-					cursor: pointer;
-					display: flex;
-					align-items: center;
-					gap: 6px;
-					transition: all 0.2s;
-				}
-
-				.refresh-btn:hover {
-					background: #e2e8f0;
-					color: #1e293b;
-				}
-
-				@keyframes spin {
-					from {
-						transform: rotate(0deg);
-					}
-
-					to {
-						transform: rotate(360deg);
-					}
-				}
-			</style>
-
-			<div class="greeting-container">
-				<h2>System Access & Invitations</h2>
-			</div>
-
-			<div class="access-management-container">
-				<!-- Provisioning Form -->
-				<div class="provisioning-card">
-					<h3>Provision New Administrator</h3>
-					<p>Generate and securely issue registration credentials for senior staff members.</p>
-
-					<form id="inviteForm">
-						<div class="invite-input-group">
-							<div class="invite-field">
-								<label for="inviteEmail">Email Address</label>
-								<input type="email" id="inviteEmail" required placeholder="admin@example.com">
-							</div>
-
-							<div class="invite-field">
-								<label for="inviteRole">Assigned Role</label>
-								<select id="inviteRole" required>
-									<option value="" disabled selected>Select Role</option>
-									<option value="student">Student</option>
-									<option value="incharge">In-charge</option>
-									<option value="hod">HOD</option>
-									<option value="admin">Admin</option>
-									<option value="principal">Principal</option>
-									<option value="superadmin"
-										style="background: transparent; color: #92400e; font-weight: 600;">🔑 Super Admin
-										(System-wide)</option>
-								</select>
-								<small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
-									Super Admin can manage multiple colleges and system settings
-								</small>
-							</div>
-
-							<div class="invite-field" id="inviteCollegeField">
-								<label for="inviteCollege">College</label>
-								<select id="inviteCollege" required>
-									<option value="" disabled selected>Select College</option>
-								</select>
-								<small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
-									The college this user will be assigned to
-								</small>
-							</div>
-
-							<button type="submit" id="sendInviteBtn" class="logout-btn"
-								style="margin: 0; padding: 0 32px; height: 45px; background: #2563eb; color: white; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px;">
-								<span class="btn-text">Issue Invite</span>
-								<span class="spinner hidden"
-									style="width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
-							</button>
-						</div>
-					</form>
-
-					<!-- Quick Super Admin Creation (No Email Required) -->
-					<div
-						style="margin-top: 2rem; padding: 1.5rem; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px;">
-						<h4 style="margin: 0 0 1rem 0; color: #92400e; display: flex; align-items: center; gap: 8px;">
-							🔑 Quick Super Admin Setup
-						</h4>
-						<p style="margin: 0 0 1rem 0; color: #78350f; font-size: 14px;">
-							Create a super admin invite token without email setup (for initial system setup)
-						</p>
-						<div style="display: flex; gap: 1rem; align-items: end;">
-							<div style="flex: 1;">
-								<label for="quickSuperAdminEmail"
-									style="display: block; margin-bottom: 4px; color: #78350f; font-weight: 600; font-size: 14px;">Email
-									Address</label>
-								<input type="email" id="quickSuperAdminEmail" placeholder="superadmin@example.com"
-									style="width: 100%; padding: 8px 12px; border: 1px solid #fbbf24; border-radius: 6px; background: transparent;">
-							</div>
-							<button id="createQuickSuperAdmin"
-								style="padding: 8px 16px; background: #d97706; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; white-space: nowrap;">
-								Create Token
-							</button>
-						</div>
-						<div id="quickSuperAdminResult"
-							style="margin-top: 1rem; padding: 1rem; background: transparent; border-radius: 6px; display: none;">
-							<strong style="color: #059669;">Registration Link Created:</strong>
-							<div id="quickSuperAdminLink"
-								style="word-break: break-all; font-family: monospace; font-size: 12px; margin: 8px 0; padding: 8px; background: #f3f4f6; border-radius: 4px;">
-							</div>
-							<button onclick="copyQuickSuperAdminLink()"
-								style="padding: 4px 8px; background: #3b82f6; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
-								Copy Link
-							</button>
-						</div>
-					</div>
-
-					<div id="inviteMessage" class="message hidden"
-						style="margin-top: 20px; padding: 12px; border-radius: 8px; font-size: 14px; text-align: center; border: 1px solid transparent;">
-					</div>
-				</div>
-
-				<!-- Audit Log -->
-				<div class="audit-log-card">
-					<div class="audit_log_header">
-						<h3 style="margin: 0;">Invitation Audit Log</h3>
-						<div style="display: flex; gap: 8px;">
-							<button id="clearAllInvitesBtn" class="refresh-btn" type="button"
-								title="Clear All Completed Logs"
-								style="background: #3b82f6; color: white; border: none;">
-								<span>🗑️</span> Clear All
-							</button>
-							<button id="refreshInvitesBtn" class="refresh-btn" type="button" title="Refresh Log"
-								style="background: #3b82f6; color: white; border: none;">
-								<span>🔄</span> Refresh
-							</button>
-						</div>
-					</div>
-					<div class="table-responsive" style="margin: 0; overflow: visible;">
-						<table class="invite-table">
-							<thead>
-								<tr>
-									<th>Recipient</th>
-									<th>Role</th>
-									<th>Issued On</th>
-									<th>Status / TTL</th>
-									<th>Action</th>
-								</tr>
-							</thead>
-							<tbody id="invitesTableBody">
-								<tr>
-									<td colspan="5" style="text-align:center; padding: 40px; color: #94a3b8;">Loading
-										audit records...</td>
-								</tr>
-							</tbody>
-						</table>
-					</div>
+			<!-- Reminder timing note -->
+			<div style="margin-top:28px; padding:18px 20px; border-radius:14px; border:1px solid rgba(255,255,255,0.12); max-width:600px;">
+				<div style="font-weight:700; margin-bottom:6px;">ℹ️ How reminders work</div>
+				<div style="font-size:13px; opacity:0.7; line-height:1.7;">
+					• Reminders are sent <strong>10 minutes before each session ends</strong><br>
+					• Each student's browser checks the timing and sends the email automatically<br>
+					• Students must be logged in for reminders to trigger<br>
+					• Timing is set per-college by the college admin
 				</div>
 			</div>
 		</section>
-
-
-
 		<!-- DAYS COUNT MANAGEMENT -->
 		<section id="dayscount" class="page section">
 

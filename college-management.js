@@ -89,6 +89,31 @@ async function loadColleges() {
             const stats = await getCollegeStats(college.id);
             college.stats = stats;
 
+            // Get college-specific settings saved by college admin
+            try {
+                const settingsSnap = await getDoc(
+                    firestoreDoc(db, "colleges", doc.id, "settings", "attendance")
+                );
+                if (settingsSnap.exists()) {
+                    const s = settingsSnap.data();
+                    // College admin saves lat/lng — always prefer this over root gpsSettings
+                    if (s.lat && s.lng) {
+                        college.gpsSettings = {
+                            latitude:  s.lat,
+                            longitude: s.lng,
+                            radius:    s.radius || 100
+                        };
+                    }
+                    // Merge timing
+                    if (s.fnStart) {
+                        college.fnStart = s.fnStart;
+                        college.fnEnd   = s.fnEnd;
+                        college.anStart = s.anStart;
+                        college.anEnd   = s.anEnd;
+                    }
+                }
+            } catch (_) {}
+
             colleges.push(college);
         }
 
@@ -188,10 +213,11 @@ function renderColleges(colleges) {
                         <div><strong>Email:</strong> ${college.email || 'Not set'}</div>
                         <div><strong>Phone:</strong> ${college.phone || 'Not set'}</div>
                         ${college.website ? `<div><strong>Website:</strong> <a href="${college.website}" target="_blank" style="color: #3b82f6;">${college.website}</a></div>` : ''}
-                        ${college.gpsSettings && (college.gpsSettings.latitude || college.gpsSettings.longitude) ?
-            `<div><strong>GPS:</strong> ${college.gpsSettings.latitude || 'N/A'}, ${college.gpsSettings.longitude || 'N/A'} (${college.gpsSettings.radius || 100}m radius)</div>` :
-            '<div><strong>GPS:</strong> <span style="color: #ef4444;">Pending college admin setup</span></div>'
-        }
+                        ${college.fnStart ? `<div><strong>FN:</strong> ${college.fnStart} – ${college.fnEnd} &nbsp;|&nbsp; <strong>AN:</strong> ${college.anStart} – ${college.anEnd}</div>` : '<div><strong>Timing:</strong> <span style="color:#f59e0b;">Not configured</span></div>'}
+                        ${college.gpsSettings && college.gpsSettings.latitude && college.gpsSettings.longitude
+                            ? `<div><strong>GPS:</strong> ${parseFloat(college.gpsSettings.latitude).toFixed(5)}, ${parseFloat(college.gpsSettings.longitude).toFixed(5)} (${college.gpsSettings.radius || 100}m)</div>`
+                            : '<div><strong>GPS:</strong> <span style="color:#ef4444;">Not configured</span></div>'
+                        }
                     </div>
                     
                     <div class="college-actions">
@@ -250,21 +276,43 @@ window.editCollege = async function (collegeId) {
         document.getElementById("collegePhone").value = college.phone || "";
         document.getElementById("collegeWebsite").value = college.website || "";
 
-        // GPS settings
-        if (college.gpsSettings) {
-            document.getElementById("gpsLatitude").value = college.gpsSettings.latitude || "";
-            document.getElementById("gpsLongitude").value = college.gpsSettings.longitude || "";
-            document.getElementById("gpsRadius").value = college.gpsSettings.radius || 100;
+        // GPS settings — prefer settings subcollection (set by college admin)
+        let lat = college.gpsSettings?.latitude || "";
+        let lng = college.gpsSettings?.longitude || "";
+        let radius = college.gpsSettings?.radius || 100;
+
+        // Session timings — prefer settings subcollection (set by college admin)
+        let fnStart = "09:00", fnEnd = "12:00", anStart = "13:00", anEnd = "16:00";
+        if (college.settings?.sessionTimings) {
+            const t = college.settings.sessionTimings;
+            fnStart = t.forenoon?.start  || fnStart;
+            fnEnd   = t.forenoon?.end    || fnEnd;
+            anStart = t.afternoon?.start || anStart;
+            anEnd   = t.afternoon?.end   || anEnd;
         }
 
-        // Session timings
-        if (college.settings && college.settings.sessionTimings) {
-            const timings = college.settings.sessionTimings;
-            document.getElementById("fnStart").value = timings.forenoon?.start || "09:00";
-            document.getElementById("fnEnd").value = timings.forenoon?.end || "12:00";
-            document.getElementById("anStart").value = timings.afternoon?.start || "13:00";
-            document.getElementById("anEnd").value = timings.afternoon?.end || "16:00";
-        }
+        // Always override with settings subcollection if available
+        try {
+            const sSnap = await getDoc(doc(db, "colleges", collegeId, "settings", "attendance"));
+            if (sSnap.exists()) {
+                const s = sSnap.data();
+                if (s.lat)     lat    = s.lat;
+                if (s.lng)     lng    = s.lng;
+                if (s.radius)  radius = s.radius;
+                if (s.fnStart) fnStart = s.fnStart;
+                if (s.fnEnd)   fnEnd   = s.fnEnd;
+                if (s.anStart) anStart = s.anStart;
+                if (s.anEnd)   anEnd   = s.anEnd;
+            }
+        } catch (_) {}
+
+        document.getElementById("gpsLatitude").value  = lat;
+        document.getElementById("gpsLongitude").value = lng;
+        document.getElementById("gpsRadius").value    = radius;
+        document.getElementById("fnStart").value = fnStart;
+        document.getElementById("fnEnd").value   = fnEnd;
+        document.getElementById("anStart").value = anStart;
+        document.getElementById("anEnd").value   = anEnd;
 
         document.getElementById("collegeModal").classList.add("show");
 
@@ -323,9 +371,26 @@ document.getElementById("collegeForm").addEventListener("submit", async (e) => {
     }
 
     try {
+        const fnStartVal = document.getElementById("fnStart").value;
+        const fnEndVal   = document.getElementById("fnEnd").value;
+        const anStartVal = document.getElementById("anStart").value;
+        const anEndVal   = document.getElementById("anEnd").value;
+
+        const attendanceSettings = {
+            fnStart: fnStartVal,
+            fnEnd:   fnEndVal,
+            anStart: anStartVal,
+            anEnd:   anEndVal,
+            lat:     String(collegeData.gpsSettings.latitude  || ''),
+            lng:     String(collegeData.gpsSettings.longitude || ''),
+            radius:  String(collegeData.gpsSettings.radius    || 100)
+        };
+
         if (editingCollegeId) {
             // Update existing college
             await updateDoc(doc(db, "colleges", editingCollegeId), collegeData);
+            // Also save timing+GPS to the settings subcollection (same path college admin uses)
+            await setDoc(doc(db, "colleges", editingCollegeId, "settings", "attendance"), attendanceSettings, { merge: true });
             alert("College updated successfully!");
         } else {
             // Check if college code already exists
@@ -339,7 +404,9 @@ document.getElementById("collegeForm").addEventListener("submit", async (e) => {
 
             // Add new college
             collegeData.createdAt = serverTimestamp();
-            await addDoc(collection(db, "colleges"), collegeData);
+            const newRef = await addDoc(collection(db, "colleges"), collegeData);
+            // Save timing+GPS to settings subcollection
+            await setDoc(doc(db, "colleges", newRef.id, "settings", "attendance"), attendanceSettings, { merge: true });
             alert("College added successfully!");
         }
 

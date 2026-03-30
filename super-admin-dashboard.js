@@ -793,6 +793,14 @@ function showSection(id, isBack = false) {
 		case 'security':
 			if (typeof loadSecuritySettings === 'function') loadSecuritySettings();
 			break;
+		case 'timing':
+		case 'gps':
+		case 'holiday':
+			if (typeof populateSettingsCollegeFilters === 'function') populateSettingsCollegeFilters();
+			break;
+		case 'emailreminders':
+			if (typeof loadEmailReminderSection === 'function') loadEmailReminderSection();
+			break;
 		case 'dayscount':
 			if (typeof initializeAcademicYearManagement === 'function') initializeAcademicYearManagement();
 			break;
@@ -1450,7 +1458,7 @@ function clearClearedForToday() {
 
 async function loadSystemActivity() {
 	if (!recentActivityBody) return;
-	recentActivityBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Loading...</td></tr>";
+	recentActivityBody.innerHTML = "<tr><td colspan='4' style='text-align:center;'>Loading...</td></tr>";
 
 	const today = getTodayDateString();
 	const activities = [];
@@ -1467,93 +1475,83 @@ async function loadSystemActivity() {
 		const t = timestamp.toDate ? timestamp.toDate().getTime() : (timestamp.seconds || 0) * 1000;
 		return t >= todayStart;
 	}
+	function push(ts, source, type, icon, text) {
+		const sortKey = ts?.toDate?.()?.getTime() ?? (ts?.seconds || 0) * 1000 ?? 0;
+		activities.push({ sortKey, time: toTimeStr(ts), source: source || "System", type, icon, activity: text });
+	}
 
 	try {
-		// User registrations today (createdAt)
+		// 1. User registrations today
 		try {
-			const usersSnap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(80)));
-			usersSnap.forEach(docSnap => {
-				const u = docSnap.data();
-				const role = (u.role || "").toLowerCase();
-				if (role === "superadmin" || role === "super-admin") return;
-				const createdAt = u.createdAt;
-				if (!isToday(createdAt)) return;
-				activities.push({
-					sortKey: createdAt?.toDate?.()?.getTime() ?? createdAt?.seconds * 1000 ?? 0,
-					time: toTimeStr(createdAt),
-					source: (u.collegeName || "System") + (u.role ? ` (${u.role})` : ""),
-					activity: `User registered: ${u.name || u.email || "—"}`
-				});
+			const snap = await getDocs(query(collection(db, "users"), orderBy("createdAt", "desc"), limit(100)));
+			snap.forEach(d => {
+				const u = d.data();
+				if ((u.role||"").toLowerCase().includes("superadmin")) return;
+				if (!isToday(u.createdAt)) return;
+				push(u.createdAt, u.collegeName || "System", "registration", "👤", `Registered: ${u.name || u.email || "—"} (${u.role || "user"})`);
 			});
-		} catch (e) {
-			console.warn("System activity: could not load users", e);
-		}
+		} catch (e) { console.warn("activity: users", e); }
 
-		// Attendance marked today
+		// 2. Attendance marked today
 		try {
-			const attSnap = await getDocs(query(collection(db, "attendanceRecords"), where("date", "==", today)));
+			const snap = await getDocs(query(collection(db, "attendanceRecords"), where("date", "==", today)));
 			const byCollege = {};
-			attSnap.forEach(docSnap => {
-				const r = docSnap.data();
-				const cid = r.collegeId || "Unknown";
-				if (!byCollege[cid]) byCollege[cid] = { count: 0, lastTs: r.timestamp };
-				byCollege[cid].count++;
-				if (r.timestamp && (!byCollege[cid].lastTs || (r.timestamp.toDate?.()?.getTime() > (byCollege[cid].lastTs?.toDate?.()?.getTime() || 0))))
-					byCollege[cid].lastTs = r.timestamp;
+			snap.forEach(d => {
+				const r = d.data();
+				const cid = r.collegeName || r.collegeId || "Unknown";
+				if (!byCollege[cid]) byCollege[cid] = { fn: 0, an: 0, lastTs: null };
+				if (r.session === "FN") byCollege[cid].fn++;
+				else if (r.session === "AN") byCollege[cid].an++;
+				if (r.timestamp) byCollege[cid].lastTs = r.timestamp;
 			});
-			Object.keys(byCollege).forEach(cid => {
-				const x = byCollege[cid];
-				const ts = x.lastTs;
-				const t = ts?.toDate ? ts.toDate().getTime() : (ts?.seconds || 0) * 1000;
-				activities.push({
-					sortKey: t,
-					time: ts ? toTimeStr(ts) : "Today",
-					source: cid,
-					activity: `Attendance marked: ${x.count} record(s) today`
-				});
+			Object.entries(byCollege).forEach(([cid, x]) => {
+				push(x.lastTs, cid, "attendance", "✅", `Attendance: FN ${x.fn} | AN ${x.an} records`);
 			});
-		} catch (e) {
-			console.warn("System activity: could not load attendance", e);
-		}
+		} catch (e) { console.warn("activity: attendance", e); }
 
-		// Profile update requests (created today)
+		// 3. Profile update requests today
 		try {
-			const profileSnap = await getDocs(query(collection(db, "profileUpdateRequests"), where("status", "in", ["pending", "hod_verified"])));
-			profileSnap.forEach(docSnap => {
-				const r = docSnap.data();
-				const createdAt = r.createdAt;
-				if (!isToday(createdAt)) return;
-				activities.push({
-					sortKey: createdAt?.toDate?.()?.getTime() ?? (createdAt?.seconds || 0) * 1000,
-					time: toTimeStr(createdAt),
-					source: r.collegeName || "System",
-					activity: `Profile update requested: ${r.name || r.userName || "—"}`
-				});
+			const snap = await getDocs(query(collection(db, "profileUpdateRequests"), where("status", "in", ["pending", "hod_verified", "approved", "rejected"])));
+			snap.forEach(d => {
+				const r = d.data();
+				if (!isToday(r.createdAt)) return;
+				const statusLabel = r.status === "approved" ? "Approved" : r.status === "rejected" ? "Rejected" : "Requested";
+				push(r.createdAt, r.collegeName || "System", "profile", "📝", `Profile ${statusLabel}: ${r.name || r.userName || "—"}`);
 			});
-		} catch (e) {
-			console.warn("System activity: could not load profile requests", e);
-		}
+		} catch (e) { console.warn("activity: profile", e); }
 
-		// Permission requests (created today)
+		// 4. Face re-registrations today (faceDescriptor updated)
 		try {
-			const permSnap = await getDocs(query(collection(db, "permissionRequests"), where("status", "==", "pending")));
-			permSnap.forEach(docSnap => {
-				const r = docSnap.data();
-				const createdAt = r.createdAt;
-				if (!isToday(createdAt)) return;
-				activities.push({
-					sortKey: createdAt?.toDate?.()?.getTime() ?? (createdAt?.seconds || 0) * 1000,
-					time: toTimeStr(createdAt),
-					source: r.collegeName || "System",
-					activity: `Permission requested: ${r.userName || r.label || "—"}`
-				});
+			const snap = await getDocs(query(collection(db, "users"), orderBy("faceUpdatedAt", "desc"), limit(50)));
+			snap.forEach(d => {
+				const u = d.data();
+				if (!u.faceUpdatedAt || !isToday(u.faceUpdatedAt)) return;
+				push(u.faceUpdatedAt, u.collegeName || "System", "face", "🤳", `Face re-registered: ${u.name || u.email || "—"}`);
 			});
-		} catch (e) {
-			console.warn("System activity: could not load permission requests", e);
-		}
+		} catch (e) { /* faceUpdatedAt may not exist yet */ }
+
+		// 5. Manual attendance requests today
+		try {
+			const snap = await getDocs(query(collection(db, "manualRequests"), where("status", "in", ["pending", "approved", "rejected"])));
+			snap.forEach(d => {
+				const r = d.data();
+				if (!isToday(r.createdAt)) return;
+				push(r.createdAt, r.collegeName || "System", "manual", "📋", `Manual attendance: ${r.name || "—"} (${r.status})`);
+			});
+		} catch (e) { console.warn("activity: manual", e); }
+
+		// 6. Permission requests today
+		try {
+			const snap = await getDocs(query(collection(db, "permissionRequests"), where("status", "in", ["pending", "approved", "rejected"])));
+			snap.forEach(d => {
+				const r = d.data();
+				if (!isToday(r.createdAt)) return;
+				push(r.createdAt, r.collegeName || "System", "permission", "🔑", `Permission: ${r.userName || r.label || "—"} (${r.status})`);
+			});
+		} catch (e) { console.warn("activity: permissions", e); }
 
 		activities.sort((a, b) => (b.sortKey || 0) - (a.sortKey || 0));
-		renderSystemActivity(activities.slice(0, 50));
+		renderSystemActivity(activities.slice(0, 80));
 	} catch (err) {
 		console.error("Error loading system activity:", err);
 		renderSystemActivity([], true);
@@ -1565,22 +1563,33 @@ function renderSystemActivity(activities, isError) {
 	recentActivityBody.innerHTML = "";
 
 	if (isError) {
-		recentActivityBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>Error loading activity.</td></tr>";
+		recentActivityBody.innerHTML = "<tr><td colspan='4' style='text-align:center;color:#ef4444;'>Error loading activity.</td></tr>";
 		return;
 	}
 
 	const list = activities || [];
 	if (list.length === 0) {
-		recentActivityBody.innerHTML = "<tr><td colspan='3' style='text-align:center;'>No recent system activity today.</td></tr>";
+		recentActivityBody.innerHTML = "<tr><td colspan='4' style='text-align:center;opacity:0.5;'>No activity today.</td></tr>";
 		return;
 	}
 
-	list.forEach(activity => {
+	const typeColors = {
+		registration: "#3b82f6",
+		attendance:   "#10b981",
+		profile:      "#8b5cf6",
+		face:         "#f59e0b",
+		manual:       "#06b6d4",
+		permission:   "#ec4899"
+	};
+
+	list.forEach(a => {
 		const row = document.createElement("tr");
+		const color = typeColors[a.type] || "#64748b";
 		row.innerHTML = `
-			<td>${escapeHtml(activity.time)}</td>
-			<td><strong>${escapeHtml(activity.source)}</strong></td>
-			<td>${escapeHtml(activity.activity)}</td>
+			<td style="white-space:nowrap;">${escapeHtml(a.time)}</td>
+			<td><span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:${color}22;color:${color};">${escapeHtml(a.icon || "")} ${escapeHtml(a.type || "")}</span></td>
+			<td style="font-weight:600;">${escapeHtml(a.source)}</td>
+			<td>${escapeHtml(a.activity)}</td>
 		`;
 		recentActivityBody.appendChild(row);
 	});
@@ -5278,528 +5287,102 @@ if (originalShowSection) {
 }
 /* ================= NOTIFICATION MANAGEMENT ================= */
 
-/* ================= EMAIL REMINDER MANAGEMENT ================= */
 
-let emailReminderSettings = {
-	emailRemindersEnabled: true,
-	reminderMinutes: 10,
-	emailjsPublicKey: 'pZ5Z7DtClyskT-d5S',
-	emailjsServiceId: 'service_17odv2l',
-	emailjsTemplateId: 'template_o8c4fyw'
-};
+/* ================= EMAIL REMINDER MANAGEMENT (multi-college) ================= */
 
-// Initialize email reminder management
-function initializeEmailReminderManagement() {
-	// Load saved settings
-	const savedSettings = localStorage.getItem('emailReminderSettings');
-	if (savedSettings) {
-		emailReminderSettings = { ...emailReminderSettings, ...JSON.parse(savedSettings) };
-	}
+// updateEmailReminderTiming kept for backward compat (called by saveTiming)
+function updateEmailReminderTiming(fnEnd, anEnd) {}
 
-	// Update UI
-	updateEmailReminderUI();
-	setupEmailReminderListeners();
-	updateEmailReminderStats();
+async function loadEmailReminderSection() {
+    const container = document.getElementById('emailReminderCollegeList');
+    const filter    = document.getElementById('emailReminderCollegeFilter');
+    if (!container) return;
+
+    container.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5;">Loading...</div>';
+
+    try {
+        const snap = await getDocs(collection(db, 'colleges'));
+        const colleges = [];
+        for (const d of snap.docs) {
+            const data = d.data();
+            let settings = {};
+            try {
+                const sSnap = await getDoc(doc(db, 'colleges', d.id, 'settings', 'attendance'));
+                if (sSnap.exists()) settings = sSnap.data();
+            } catch (_) {}
+            colleges.push({ id: d.id, name: data.name || d.id, isActive: data.isActive !== false, settings });
+        }
+        colleges.sort((a, b) => a.name.localeCompare(b.name));
+
+
+        // Populate filter — preserve current selection
+        if (filter) {
+            const currentVal = filter.value;
+            while (filter.options.length > 1) filter.remove(1);
+            colleges.forEach(c => {
+                const o = document.createElement('option');
+                o.value = c.id; o.textContent = c.name;
+                filter.appendChild(o);
+            });
+            if (currentVal && [...filter.options].some(o => o.value === currentVal)) {
+                filter.value = currentVal;
+            }
+        }
+
+        const selectedId = filter ? filter.value : 'all';
+        const visible = selectedId === 'all' ? colleges : colleges.filter(c => c.id === selectedId);
+
+        if (visible.length === 0) {
+            container.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5;">No colleges found</div>';
+            return;
+        }
+
+        container.innerHTML = visible.map(c => {
+            const s = c.settings;
+            const hasTiming = !!(s.fnStart && s.fnEnd);
+            const hasGPS    = !!(s.lat && s.lng);
+            const remind    = 10;
+            function reminderTime(end) {
+                if (!end) return '--';
+                const [h, m] = end.split(':').map(Number);
+                const t = h * 60 + m - remind;
+                const rh = Math.floor(t / 60), rm = t % 60;
+                const p = rh >= 12 ? 'PM' : 'AM';
+                return (rh % 12 || 12) + ':' + String(rm).padStart(2,'0') + ' ' + p;
+            }
+            const timingBadge = hasTiming
+                ? '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(16,185,129,0.2);color:#6ee7b7;">Timing Set</span>'
+                : '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(239,68,68,0.2);color:#fca5a5;">No Timing</span>';
+            const gpsBadge = hasGPS
+                ? '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(59,130,246,0.2);color:#93c5fd;">GPS Set</span>'
+                : '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(245,158,11,0.2);color:#fcd34d;">GPS Pending</span>';
+            const timingBlock = hasTiming
+                ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-top:14px;">'
+                  + '<div style="padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);">'
+                  + '<div style="opacity:0.55;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">FN Session</div>'
+                  + '<div style="font-weight:700;font-size:15px;">' + escapeHtml(s.fnStart) + ' to ' + escapeHtml(s.fnEnd) + '</div>'
+                  + '<div style="opacity:0.45;font-size:11px;margin-top:4px;">Reminder at ' + reminderTime(s.fnEnd) + '</div>'
+                  + '</div>'
+                  + '<div style="padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);">'
+                  + '<div style="opacity:0.55;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">AN Session</div>'
+                  + '<div style="font-weight:700;font-size:15px;">' + escapeHtml(s.anStart) + ' to ' + escapeHtml(s.anEnd) + '</div>'
+                  + '<div style="opacity:0.45;font-size:11px;margin-top:4px;">Reminder at ' + reminderTime(s.anEnd) + '</div>'
+                  + '</div></div>'
+                : '<div style="opacity:0.45;font-size:13px;padding:10px 0;">College admin has not configured timing yet.</div>';
+            return '<div style="padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);">'
+                + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">'
+                + '<div><div style="font-weight:700;font-size:15px;">' + escapeHtml(c.name) + '</div>'
+                + '<div style="font-size:12px;opacity:0.55;margin-top:3px;">' + (c.isActive ? 'Active' : 'Inactive') + '</div></div>'
+                + '<div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;">' + timingBadge + gpsBadge + '</div>'
+                + '</div>' + timingBlock + '</div>';
+        }).join('');
+
+    } catch (e) {
+        console.error('loadEmailReminderSection:', e);
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Failed to load</div>';
+    }
 }
 
-// Function to update email reminder timing display
-function updateEmailReminderTiming(fnEndTime, anEndTime) {
-	const reminderMinutesInput = document.getElementById('emailReminderMinutes');
-	const fnReminderTimeEl = document.getElementById('fnReminderTime');
-	const anReminderTimeEl = document.getElementById('anReminderTime');
-	const scheduleInfoEl = document.getElementById('scheduleInfo');
-
-	if (!reminderMinutesInput || !fnReminderTimeEl || !anReminderTimeEl) return;
-
-	const reminderMinutes = parseInt(reminderMinutesInput.value) || 10;
-
-	// Function to subtract minutes from time string
-	function subtractMinutes(timeStr, minutes) {
-		const [hours, mins] = timeStr.split(':').map(Number);
-		const totalMinutes = hours * 60 + mins - minutes;
-		const newHours = Math.floor(totalMinutes / 60);
-		const newMins = totalMinutes % 60;
-		return `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
-	}
-
-	// Function to format time to 12-hour format
-	function formatTo12Hour(timeStr) {
-		const [hours, mins] = timeStr.split(':').map(Number);
-		const period = hours >= 12 ? 'PM' : 'AM';
-		const displayHours = hours % 12 || 12;
-		return `${displayHours}:${String(mins).padStart(2, '0')} ${period}`;
-	}
-
-	// Calculate reminder times
-	const fnReminderTime = subtractMinutes(fnEndTime, reminderMinutes);
-	const anReminderTime = subtractMinutes(anEndTime, reminderMinutes);
-
-	// Update display
-	fnReminderTimeEl.textContent = formatTo12Hour(fnReminderTime);
-	anReminderTimeEl.textContent = formatTo12Hour(anReminderTime);
-
-	// Update schedule info
-	if (scheduleInfoEl) {
-		scheduleInfoEl.textContent = `${reminderMinutes} min before FN (${formatTo12Hour(fnReminderTime)}) & AN (${formatTo12Hour(anReminderTime)})`;
-	}
-}
-
-function updateEmailReminderUI() {
-	const emailToggle = document.getElementById('emailRemindersToggle');
-	const reminderMinutes = document.getElementById('emailReminderMinutes');
-	const publicKey = document.getElementById('emailjsPublicKey');
-	const serviceId = document.getElementById('emailjsServiceId');
-	const templateId = document.getElementById('emailjsTemplateId');
-
-	if (emailToggle) emailToggle.checked = emailReminderSettings.emailRemindersEnabled;
-	if (reminderMinutes) reminderMinutes.value = emailReminderSettings.reminderMinutes;
-	if (publicKey) publicKey.value = emailReminderSettings.emailjsPublicKey;
-	if (serviceId) serviceId.value = emailReminderSettings.emailjsServiceId;
-	if (templateId) templateId.value = emailReminderSettings.emailjsTemplateId;
-}
-
-function setupEmailReminderListeners() {
-	const emailToggle = document.getElementById('emailRemindersToggle');
-	const reminderMinutes = document.getElementById('emailReminderMinutes');
-	const publicKey = document.getElementById('emailjsPublicKey');
-	const serviceId = document.getElementById('emailjsServiceId');
-	const templateId = document.getElementById('emailjsTemplateId');
-	const saveBtn = document.getElementById('saveEmailSettings');
-	const testBtn = document.getElementById('testEmailReminderBtn');
-	const bulkTestBtn = document.getElementById('bulkTestEmailBtn');
-	const bulkReminderBtn = document.getElementById('bulkReminderBtn');
-
-	if (emailToggle) {
-		emailToggle.addEventListener('change', (e) => {
-			emailReminderSettings.emailRemindersEnabled = e.target.checked;
-			saveEmailReminderSettings();
-			showEmailReminderMessage(
-				e.target.checked ? '✅ Email reminders enabled' : '🔕 Email reminders disabled',
-				'info'
-			);
-		});
-	}
-
-	if (reminderMinutes) {
-		reminderMinutes.addEventListener('change', (e) => {
-			emailReminderSettings.reminderMinutes = parseInt(e.target.value);
-			saveEmailReminderSettings();
-			showEmailReminderMessage('⏰ Reminder timing updated', 'info');
-
-			// Update timing display
-			const fnEndInput = document.getElementById('fnEnd');
-			const anEndInput = document.getElementById('anEnd');
-			if (fnEndInput && anEndInput) {
-				updateEmailReminderTiming(fnEndInput.value, anEndInput.value);
-			}
-		});
-	}
-
-	if (saveBtn) {
-		saveBtn.addEventListener('click', () => {
-			saveEmailConfiguration();
-		});
-	}
-
-	if (testBtn) {
-		testBtn.addEventListener('click', async () => {
-			await sendTestEmailReminder();
-		});
-	}
-
-	if (bulkTestBtn) {
-		bulkTestBtn.addEventListener('click', async () => {
-			await sendBulkTestEmails();
-		});
-	}
-
-	if (bulkReminderBtn) {
-		bulkReminderBtn.addEventListener('click', async () => {
-			await sendBulkReminders();
-		});
-	}
-}
-
-function saveEmailConfiguration() {
-	const emailToggle = document.getElementById('emailRemindersToggle')?.checked;
-	const reminderMinutes = document.getElementById('emailReminderMinutes')?.value;
-
-	if (!reminderMinutes || reminderMinutes < 5 || reminderMinutes > 60) {
-		showEmailReminderMessage('❌ Please enter a valid reminder time (5-60 minutes)', 'error');
-		return;
-	}
-
-	// Update settings with pre-configured EmailJS values
-	emailReminderSettings.emailRemindersEnabled = emailToggle;
-	emailReminderSettings.reminderMinutes = parseInt(reminderMinutes);
-
-	// Use pre-configured EmailJS settings
-	emailReminderSettings.emailjsPublicKey = 'pZ5Z7DtClyskT-d5S';
-	emailReminderSettings.emailjsServiceId = 'service_17odv2l';
-	emailReminderSettings.emailjsTemplateId = 'template_o8c4fyw';
-
-	saveEmailReminderSettings();
-
-	// Update the email reminder service
-	if (window.emailReminderService) {
-		window.emailReminderService.emailjsPublicKey = emailReminderSettings.emailjsPublicKey;
-		window.emailReminderService.serviceId = emailReminderSettings.emailjsServiceId;
-		window.emailReminderService.templateId = emailReminderSettings.emailjsTemplateId;
-		window.emailReminderService.sessionSettings.reminderMinutes = emailReminderSettings.reminderMinutes;
-	}
-
-	showEmailReminderMessage('✅ Email reminder settings saved successfully', 'success');
-	updateEmailReminderStats();
-}
-
-async function sendTestEmailReminder() {
-	showEmailReminderMessage('📤 Sending test email reminder...', 'info');
-
-	try {
-		// Validate configuration first
-		const publicKey = document.getElementById('emailjsPublicKey')?.value;
-		const serviceId = document.getElementById('emailjsServiceId')?.value;
-		const templateId = document.getElementById('emailjsTemplateId')?.value;
-
-		if (!publicKey || !serviceId || !templateId) {
-			showEmailReminderMessage('❌ Please configure EmailJS settings first', 'error');
-			return;
-		}
-
-		// Initialize EmailJS with current settings
-		if (typeof emailjs !== 'undefined') {
-			emailjs.init(publicKey);
-		} else {
-			showEmailReminderMessage('❌ EmailJS library not loaded', 'error');
-			return;
-		}
-
-		// Get current user info (admin)
-		let adminEmail = 'test@gmail.com'; // Default test email
-
-		// Try to get actual admin email from various sources
-		if (window.currentUser && window.currentUser.email) {
-			adminEmail = window.currentUser.email;
-		} else if (typeof currentUser !== 'undefined' && currentUser && currentUser.email) {
-			adminEmail = currentUser.email;
-		} else if (window.auth && window.auth.currentUser && window.auth.currentUser.email) {
-			adminEmail = window.auth.currentUser.email;
-		} else {
-			// Try localStorage
-			const userStr = localStorage.getItem('currentUser');
-			if (userStr) {
-				try {
-					const user = JSON.parse(userStr);
-					if (user.email) adminEmail = user.email;
-				} catch (e) { }
-			}
-		}
-
-		const adminUser = {
-			name: document.getElementById('adminName')?.textContent || 'Admin',
-			email: adminEmail,
-			studentId: 'ADMIN001'
-		};
-
-		// Prepare test email parameters
-		const templateParams = {
-			to_name: adminUser.name,
-			to_email: adminUser.email,
-			student_id: adminUser.studentId,
-			session_name: 'Test Session',
-			session_type: 'TEST',
-			minutes_left: '10',
-			session_end_time: '12:00',
-			current_time: new Date().toLocaleTimeString(),
-			current_date: new Date().toLocaleDateString(),
-			dashboard_link: window.location.origin + '/student-dashboard.html?v=20260315b#markPage'
-		};
-
-		// Debug: Log what we're sending
-		console.log('📧 Sending email with parameters:', templateParams);
-		console.log('📧 Admin email being used:', adminUser.email);
-		console.log('📧 EmailJS config:', { serviceId, templateId, publicKey });
-
-		// Send test email
-		const response = await emailjs.send(serviceId, templateId, templateParams);
-
-		console.log('✅ Test email sent:', response);
-		showEmailReminderMessage('✅ Test email sent successfully! Check your inbox.', 'success');
-
-		// Log the test
-		logEmailReminderActivity('test_email_sent', 'Test email sent successfully', adminUser);
-
-	} catch (error) {
-		console.error('❌ Test email failed:', error);
-
-		// Better error handling and logging
-		let errorMessage = 'Unknown error';
-
-		if (error && typeof error === 'object') {
-			if (error.message) {
-				errorMessage = error.message;
-			} else if (error.text) {
-				errorMessage = error.text;
-			} else if (error.status) {
-				errorMessage = `Status ${error.status}: ${error.text || 'Unknown error'}`;
-			} else {
-				errorMessage = JSON.stringify(error);
-			}
-		} else if (typeof error === 'string') {
-			errorMessage = error;
-		}
-
-		console.log('📊 Full error object:', error);
-		console.log('📊 Error type:', typeof error);
-		console.log('📊 Error keys:', error ? Object.keys(error) : 'No keys');
-
-		showEmailReminderMessage(`❌ Test email failed: ${errorMessage}`, 'error');
-
-		// Log the error
-		logEmailReminderActivity('test_email_failed', errorMessage, null);
-	}
-}
-
-// Send bulk test emails to all students
-async function sendBulkTestEmails() {
-	showEmailReminderMessage('📧 Sending test emails to all students...', 'info');
-
-	try {
-		if (!window.emailReminderService) {
-			showEmailReminderMessage('❌ Email reminder service not available', 'error');
-			return;
-		}
-
-		const success = await window.emailReminderService.sendTestEmailToAllStudents();
-
-		if (success) {
-			showEmailReminderMessage('✅ Bulk test emails completed! Check logs for details.', 'success');
-		} else {
-			showEmailReminderMessage('❌ Bulk test emails failed', 'error');
-		}
-
-		// Update stats after bulk operation
-		updateEmailReminderStats();
-
-	} catch (error) {
-		console.error('❌ Bulk test emails failed:', error);
-		showEmailReminderMessage(`❌ Bulk test emails failed: ${error.message}`, 'error');
-	}
-}
-
-// Send bulk reminders to all students NOW
-async function sendBulkReminders() {
-	// Confirm before sending bulk reminders
-	const confirmed = confirm(
-		'🚨 BULK REMINDER ALERT 🚨\n\n' +
-		'This will send email reminders to ALL students who haven\'t marked attendance for the current session.\n\n' +
-		'Are you sure you want to proceed?'
-	);
-
-	if (!confirmed) {
-		return;
-	}
-
-	showEmailReminderMessage('🚨 Sending bulk reminders to all students...', 'info');
-
-	try {
-		if (!window.emailReminderService) {
-			showEmailReminderMessage('❌ Email reminder service not available', 'error');
-			return;
-		}
-
-		const success = await window.emailReminderService.sendBulkRemindersNow();
-
-		if (success) {
-			showEmailReminderMessage('✅ Bulk reminders sent successfully! Check logs for details.', 'success');
-		} else {
-			showEmailReminderMessage('❌ Bulk reminders failed or no active session', 'error');
-		}
-
-		// Update stats after bulk operation
-		updateEmailReminderStats();
-
-	} catch (error) {
-		console.error('❌ Bulk reminders failed:', error);
-		showEmailReminderMessage(`❌ Bulk reminders failed: ${error.message}`, 'error');
-	}
-}
-
-function updateEmailReminderStats() {
-	const totalEmailsEl = document.getElementById('totalEmailsSent');
-	const todayEmailsEl = document.getElementById('todayEmailsSent');
-	const configStatusEl = document.getElementById('emailConfigStatus');
-	const lastEmailEl = document.getElementById('lastEmailSent');
-
-	// Get email logs
-	const logs = JSON.parse(localStorage.getItem('emailReminderLogs') || '[]');
-	const today = new Date().toISOString().split('T')[0];
-	const todayLogs = logs.filter(log => log.date === today);
-
-	if (totalEmailsEl) totalEmailsEl.textContent = logs.length;
-	if (todayEmailsEl) todayEmailsEl.textContent = todayLogs.length;
-
-	// Configuration status
-	const isConfigured = emailReminderSettings.emailjsPublicKey &&
-		emailReminderSettings.emailjsServiceId &&
-		emailReminderSettings.emailjsTemplateId;
-
-	if (configStatusEl) {
-		configStatusEl.textContent = isConfigured ? 'Configured' : 'Not Configured';
-		configStatusEl.style.color = isConfigured ? '#10b981' : '#ef4444';
-	}
-
-	// Last email sent
-	if (lastEmailEl && logs.length > 0) {
-		const lastLog = logs[logs.length - 1];
-		const lastTime = new Date(lastLog.timestamp).toLocaleString();
-		lastEmailEl.textContent = `${lastTime} (${lastLog.status})`;
-	} else if (lastEmailEl) {
-		lastEmailEl.textContent = 'No emails sent yet';
-	}
-}
-
-function logEmailReminderActivity(action, details, user) {
-	const log = {
-		action: action,
-		details: details,
-		user: user,
-		timestamp: new Date().toISOString(),
-		date: new Date().toISOString().split('T')[0],
-		time: new Date().toLocaleTimeString()
-	};
-
-	const logs = JSON.parse(localStorage.getItem('emailReminderActivityLogs') || '[]');
-	logs.push(log);
-
-	// Keep only last 200 logs
-	if (logs.length > 200) {
-		logs.splice(0, logs.length - 200);
-	}
-
-	localStorage.setItem('emailReminderActivityLogs', JSON.stringify(logs));
-}
-
-function saveEmailReminderSettings() {
-	localStorage.setItem('emailReminderSettings', JSON.stringify(emailReminderSettings));
-}
-
-function showEmailReminderMessage(message, type = 'info') {
-	// Create or update email reminder message element
-	let messageEl = document.getElementById('emailReminderMessage');
-	if (!messageEl) {
-		messageEl = document.createElement('div');
-		messageEl.id = 'emailReminderMessage';
-		messageEl.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 15px 20px;
-            border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 10000;
-            max-width: 400px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            transition: all 0.3s ease;
-            white-space: pre-line;
-        `;
-		document.body.appendChild(messageEl);
-	}
-
-	// Set message and color based on type
-	messageEl.textContent = message;
-	switch (type) {
-		case 'success':
-			messageEl.style.background = '#10b981';
-			break;
-		case 'error':
-			messageEl.style.background = '#ef4444';
-			break;
-		case 'info':
-		default:
-			messageEl.style.background = '#3b82f6';
-			break;
-	}
-
-	// Show message
-	messageEl.style.transform = 'translateX(0)';
-	messageEl.style.opacity = '1';
-
-	// Hide after 6 seconds
-	setTimeout(() => {
-		messageEl.style.transform = 'translateX(100%)';
-		messageEl.style.opacity = '0';
-	}, 6000);
-}
-
-// Initialize email reminder management when page loads
-document.addEventListener('DOMContentLoaded', () => {
-	// Make Firestore functions available globally for email reminder service
-	window.db = db;
-	window.collection = collection;
-	window.getDocs = getDocs;
-	window.getDoc = getDoc;
-	window.doc = doc;
-	window.query = query;
-	window.where = where;
-
-	console.log('🔥 Firestore functions made available globally for email reminder service');
-
-	setTimeout(initializeEmailReminderManagement, 2000);
-});
-
-// Export functions for global access
-window.adminEmailReminder = {
-	saveConfig: saveEmailConfiguration,
-	testEmail: sendTestEmailReminder,
-	bulkTestEmails: sendBulkTestEmails,
-	bulkReminders: sendBulkReminders,
-	getStats: updateEmailReminderStats,
-	clearLogs: () => {
-		localStorage.removeItem('emailReminderLogs');
-		localStorage.removeItem('emailReminderActivityLogs');
-		showEmailReminderMessage('🗑️ Email reminder logs cleared', 'success');
-		updateEmailReminderStats();
-	},
-
-	// Debug function to test Firestore access
-	testFirestore: async () => {
-		try {
-			console.log('🔥 Testing Firestore access from admin dashboard...');
-
-			if (typeof window.db === 'undefined') {
-				console.error('❌ window.db not available');
-				return false;
-			}
-
-			const studentsQuery = window.collection(window.db, 'users');
-			const snapshot = await window.getDocs(studentsQuery);
-
-			const students = [];
-			snapshot.forEach(doc => {
-				const userData = doc.data();
-				if (userData.role === 'student' && userData.approved && userData.email) {
-					students.push({
-						uid: doc.id,
-						name: userData.name || 'Student',
-						email: userData.email
-					});
-				}
-			});
-
-			console.log(`✅ Found ${students.length} students:`, students);
-			showEmailReminderMessage(`✅ Firestore test: Found ${students.length} students`, 'success');
-			return true;
-
-		} catch (error) {
-			console.error('❌ Firestore test failed:', error);
-			showEmailReminderMessage(`❌ Firestore test failed: ${error.message}`, 'error');
-			return false;
-		}
-	}
-};
 
 /* ================= MULTI-COLLEGE NAVIGATION ================= */
 
@@ -6165,15 +5748,31 @@ window.loadCollegeDirectory = async function () {
 		const collegesSnapshot = await getDocs(collection(db, "colleges"));
 		allColleges = [];
 
-		for (const doc of collegesSnapshot.docs) {
-			const collegeData = doc.data();
+		for (const d of collegesSnapshot.docs) {
+			const collegeData = d.data();
 
-			// Get user count for this college
-			const usersQuery = query(collection(db, "users"), where("collegeId", "==", doc.id));
+			// Get user count
+			const usersQuery = query(collection(db, "users"), where("collegeId", "==", d.id));
 			const usersSnapshot = await getDocs(usersQuery);
 
+			// Get college-specific settings (timing + GPS saved by college admin)
+			let collegeSettings = {};
+			try {
+				const settingsSnap = await getDoc(doc(db, "colleges", d.id, "settings", "attendance"));
+				if (settingsSnap.exists()) collegeSettings = settingsSnap.data();
+			} catch (_) {}
+
+			// GPS is configured if either the college doc root has it OR the settings subcollection has it
+			const gpsConfigured = !!(
+				(collegeData.gpsSettings?.latitude && collegeData.gpsSettings?.longitude) ||
+				(collegeSettings.lat && collegeSettings.lng)
+			);
+
+			// Timing is configured if settings subcollection has it
+			const timingConfigured = !!(collegeSettings.fnStart && collegeSettings.fnEnd);
+
 			allColleges.push({
-				id: doc.id,
+				id: d.id,
 				name: collegeData.name || "Unknown",
 				code: collegeData.code || "N/A",
 				email: collegeData.email || "No email",
@@ -6183,14 +5782,19 @@ window.loadCollegeDirectory = async function () {
 				isActive: collegeData.isActive !== false,
 				userCount: usersSnapshot.size,
 				createdAt: collegeData.createdAt,
-				gpsConfigured: !!(collegeData.gpsSettings?.latitude && collegeData.gpsSettings?.longitude)
+				gpsConfigured,
+				timingConfigured,
+				fnStart: collegeSettings.fnStart || collegeData.fnStart || "",
+				fnEnd:   collegeSettings.fnEnd   || collegeData.fnEnd   || "",
+				anStart: collegeSettings.anStart || collegeData.anStart || "",
+				anEnd:   collegeSettings.anEnd   || collegeData.anEnd   || "",
+				lat:     collegeSettings.lat     || collegeData.gpsSettings?.latitude  || "",
+				lng:     collegeSettings.lng     || collegeData.gpsSettings?.longitude || "",
+				radius:  collegeSettings.radius  || collegeData.gpsSettings?.radius   || ""
 			});
 		}
 
-		// Update statistics
 		updateCollegeStats(allColleges);
-
-		// Render college list
 		filterCollegeList();
 
 	} catch (error) {
@@ -6253,45 +5857,37 @@ function renderCollegeList(collegeList) {
                     🏫
                 </div>
                 <div style="flex: 1;">
-                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #1e293b;">${escapeHtml(college.name)}</h3>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem;">
-                        <span style="background: #f1f5f9; color: #475569; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                    <h3 style="margin: 0; font-size: 1.2rem; font-weight: 700;">${escapeHtml(college.name)}</h3>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.25rem; flex-wrap:wrap;">
+                        <span style="background: rgba(255,255,255,0.12); padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
                             ${escapeHtml(college.code)}
                         </span>
-                        <span style="background: ${college.isActive ? '#dcfce7' : '#fee2e2'}; color: ${college.isActive ? '#166534' : '#991b1b'}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
+                        <span style="background: ${college.isActive ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}; color: ${college.isActive ? '#6ee7b7' : '#fca5a5'}; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">
                             ${college.isActive ? '🟢 Active' : '🔴 Inactive'}
                         </span>
-                        ${college.gpsConfigured ? '<span style="background: #dbeafe; color: #1e40af; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">📍 GPS Setup</span>' : '<span style="background: #fef3c7; color: #92400e; padding: 0.25rem 0.75rem; border-radius: 12px; font-size: 0.75rem; font-weight: 600;">⚠️ GPS Pending</span>'}
+                        ${college.gpsConfigured
+                            ? '<span style="background:rgba(59,130,246,0.2);color:#93c5fd;padding:0.25rem 0.75rem;border-radius:12px;font-size:0.75rem;font-weight:600;">📍 GPS Set</span>'
+                            : '<span style="background:rgba(245,158,11,0.2);color:#fcd34d;padding:0.25rem 0.75rem;border-radius:12px;font-size:0.75rem;font-weight:600;">⚠️ GPS Pending</span>'}
+                        ${college.timingConfigured
+                            ? '<span style="background:rgba(16,185,129,0.2);color:#6ee7b7;padding:0.25rem 0.75rem;border-radius:12px;font-size:0.75rem;font-weight:600;">⏰ Timing Set</span>'
+                            : '<span style="background:rgba(239,68,68,0.2);color:#fca5a5;padding:0.25rem 0.75rem;border-radius:12px;font-size:0.75rem;font-weight:600;">⏰ Timing Pending</span>'}
                     </div>
                 </div>
                 <div style="text-align: right;">
-                    <div style="font-size: 1.5rem; font-weight: 800; color: #1e293b;">${college.userCount}</div>
-                    <div style="font-size: 0.75rem; color: #64748b;">Total Users</div>
+                    <div style="font-size: 1.5rem; font-weight: 800;">${college.userCount}</div>
+                    <div style="font-size: 0.75rem; opacity:0.6;">Total Users</div>
                 </div>
             </div>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                <div>
-                    <div style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.25rem;">📧 Email</div>
-                    <div style="color: #1e293b; font-size: 0.875rem; font-weight: 500;">${escapeHtml(college.email)}</div>
-                </div>
-                <div>
-                    <div style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.25rem;">📞 Phone</div>
-                    <div style="color: #1e293b; font-size: 0.875rem; font-weight: 500;">${escapeHtml(college.phone)}</div>
-                </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem; font-size:0.85rem;">
+                <div><span style="opacity:0.6;">📧 </span>${escapeHtml(college.email)}</div>
+                <div><span style="opacity:0.6;">📞 </span>${escapeHtml(college.phone)}</div>
+                <div style="grid-column:1/-1;"><span style="opacity:0.6;">📍 </span>${escapeHtml(college.address)}</div>
+                ${college.fnStart ? `<div><span style="opacity:0.6;">🌅 FN </span>${escapeHtml(college.fnStart)}–${escapeHtml(college.fnEnd)}</div>` : ''}
+                ${college.anStart ? `<div><span style="opacity:0.6;">🌤️ AN </span>${escapeHtml(college.anStart)}–${escapeHtml(college.anEnd)}</div>` : ''}
+                ${college.lat ? `<div><span style="opacity:0.6;">🗺️ GPS </span>${escapeHtml(college.lat)}, ${escapeHtml(college.lng)} (${escapeHtml(college.radius)}m)</div>` : ''}
+                ${college.website ? `<div><span style="opacity:0.6;">🌐 </span><a href="${escapeHtml(college.website)}" target="_blank" style="color:#93c5fd;">${escapeHtml(college.website)}</a></div>` : ''}
             </div>
-            
-            <div style="margin-bottom: 1rem;">
-                <div style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.25rem;">📍 Address</div>
-                <div style="color: #1e293b; font-size: 0.875rem; font-weight: 500;">${escapeHtml(college.address)}</div>
-            </div>
-            
-            ${college.website ? `
-                <div style="margin-bottom: 1rem;">
-                    <div style="color: #64748b; font-size: 0.875rem; margin-bottom: 0.25rem;">🌐 Website</div>
-                    <a href="${college.website}" target="_blank" style="color: #3b82f6; font-size: 0.875rem; text-decoration: none;">${escapeHtml(college.website)}</a>
-                </div>
-            ` : ''}
             
             <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                 <button onclick="window.open('college-management.html', '_blank')" style="background: #3b82f6; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.875rem; cursor: pointer;">
@@ -7786,3 +7382,158 @@ async function initPresence(uid) {
 /* ================= AUTO LOGOUT (10 min idle) ================= */
 // initAutoLogout is imported from auto-logout.js and called directly at line ~1132
 
+
+/* ================= SETTINGS COLLEGE FILTERS ================= */
+
+async function populateSettingsCollegeFilters() {
+    const selectors = ['timingCollegeFilter', 'gpsCollegeFilter', 'holidayCollegeFilter'];
+    try {
+        const snap = await getDocs(collection(db, "colleges"));
+        const colleges = [];
+        snap.forEach(d => colleges.push({ id: d.id, name: d.data().name || d.id }));
+        colleges.sort((a, b) => a.name.localeCompare(b.name));
+
+        selectors.forEach(id => {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            // Keep the global option, remove old college options
+            while (sel.options.length > 1) sel.remove(1);
+            colleges.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `🏫 ${c.name}`;
+                sel.appendChild(opt);
+            });
+        });
+
+        // When college changes in timing — load that college's settings
+        const timingFilter = document.getElementById('timingCollegeFilter');
+        if (timingFilter && !timingFilter._wired) {
+            timingFilter._wired = true;
+            timingFilter.addEventListener('change', () => loadTimingForCollege(timingFilter.value));
+        }
+        const gpsFilter = document.getElementById('gpsCollegeFilter');
+        if (gpsFilter && !gpsFilter._wired) {
+            gpsFilter._wired = true;
+            gpsFilter.addEventListener('change', () => loadGPSForCollege(gpsFilter.value));
+        }
+    } catch (e) {
+        console.warn('populateSettingsCollegeFilters:', e);
+    }
+}
+
+function _settingsDocRef(collegeId) {
+    if (!collegeId || collegeId === 'global') return doc(db, 'settings', 'attendance');
+    return doc(db, 'colleges', collegeId, 'settings', 'attendance');
+}
+
+async function loadTimingForCollege(collegeId) {
+    try {
+        const snap = await getDoc(_settingsDocRef(collegeId));
+        const d = snap.exists() ? snap.data() : {};
+        if (fnStart) fnStart.value = d.fnStart || '';
+        if (fnEnd)   fnEnd.value   = d.fnEnd   || '';
+        if (anStart) anStart.value = d.anStart || '';
+        if (anEnd)   anEnd.value   = d.anEnd   || '';
+    } catch (e) { console.warn('loadTimingForCollege:', e); }
+}
+
+async function loadGPSForCollege(collegeId) {
+    try {
+        const snap = await getDoc(_settingsDocRef(collegeId));
+        const d = snap.exists() ? snap.data() : {};
+        if (lat)    lat.value    = d.lat    || '';
+        if (lng)    lng.value    = d.lng    || '';
+        if (radius) radius.value = d.radius || '';
+    } catch (e) { console.warn('loadGPSForCollege:', e); }
+}
+
+// Override saveTiming to respect college filter
+document.addEventListener('DOMContentLoaded', () => {
+    // Re-wire saveTiming with college filter support
+    const saveTimingBtn = document.getElementById('saveTiming');
+    if (saveTimingBtn) {
+        // Remove old handler by cloning
+        const newBtn = saveTimingBtn.cloneNode(true);
+        saveTimingBtn.parentNode.replaceChild(newBtn, saveTimingBtn);
+        newBtn.addEventListener('click', async () => {
+            const collegeId = document.getElementById('timingCollegeFilter')?.value || 'global';
+            try {
+                await setDoc(_settingsDocRef(collegeId), {
+                    fnStart: fnStart?.value || '',
+                    fnEnd:   fnEnd?.value   || '',
+                    anStart: anStart?.value || '',
+                    anEnd:   anEnd?.value   || ''
+                }, { merge: true });
+                updateSessionInfo();
+                updateSettingsStatus();
+                if (fnEnd && anEnd) updateEmailReminderTiming(fnEnd.value, anEnd.value);
+                alert(collegeId === 'global' ? 'Timing saved for all colleges' : 'Timing saved for selected college');
+            } catch (e) { alert('Failed to save timing'); }
+        });
+    }
+
+    // Re-wire saveGPS with college filter support
+    const saveGPSBtn = document.getElementById('saveGPS');
+    if (saveGPSBtn) {
+        const newBtn = saveGPSBtn.cloneNode(true);
+        saveGPSBtn.parentNode.replaceChild(newBtn, saveGPSBtn);
+        newBtn.addEventListener('click', async () => {
+            const collegeId = document.getElementById('gpsCollegeFilter')?.value || 'global';
+            try {
+                await setDoc(_settingsDocRef(collegeId), {
+                    lat:    lat?.value    || '',
+                    lng:    lng?.value    || '',
+                    radius: radius?.value || ''
+                }, { merge: true });
+                updateSettingsStatus();
+                alert(collegeId === 'global' ? 'GPS saved for all colleges' : 'GPS saved for selected college');
+            } catch (e) { alert('Failed to save GPS'); }
+        });
+    }
+
+    // Re-wire addHoliday with college filter support
+    const addHolidayBtn = document.getElementById('addHoliday');
+    if (addHolidayBtn) {
+        const newBtn = addHolidayBtn.cloneNode(true);
+        addHolidayBtn.parentNode.replaceChild(newBtn, addHolidayBtn);
+        newBtn.addEventListener('click', async () => {
+            const collegeId = document.getElementById('holidayCollegeFilter')?.value || 'global';
+            const mode   = holidayMode?.value || 'single';
+            const reason = holidayReason?.value || '';
+            const holidayCollection = collegeId === 'global'
+                ? collection(db, 'holidays')
+                : collection(db, 'colleges', collegeId, 'holidays');
+            try {
+                if (mode === 'single') {
+                    if (!holidayDate?.value) { alert('Please pick a date'); return; }
+                    await setDoc(doc(holidayCollection, holidayDate.value), { date: holidayDate.value, reason });
+                } else {
+                    if (!holidayStart?.value || !holidayEnd?.value) { alert('Please pick start and end dates'); return; }
+                    const start = new Date(holidayStart.value), end = new Date(holidayEnd.value);
+                    if (start > end) { alert('Start must be before end'); return; }
+                    const ops = [];
+                    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+                        const id = isoDate(new Date(d));
+                        ops.push(setDoc(doc(holidayCollection, id), { date: id, reason }));
+                    }
+                    await Promise.all(ops);
+                }
+                alert(collegeId === 'global' ? 'Holiday added for all colleges' : 'Holiday added for selected college');
+            } catch (e) { alert('Failed to add holiday'); }
+        });
+    }
+});
+
+/* ── Email Reminder section filter + refresh wiring ── */
+document.addEventListener('DOMContentLoaded', () => {
+    const refresh = document.getElementById('refreshEmailReminderStats');
+    if (refresh) refresh.addEventListener('click', () => loadEmailReminderSection());
+
+    // Filter wired after section loads (filter is populated dynamically)
+    document.addEventListener('change', (e) => {
+        if (e.target && e.target.id === 'emailReminderCollegeFilter') {
+            loadEmailReminderSection();
+        }
+    });
+});
