@@ -152,12 +152,6 @@ function escapeHtml(value) {
         .replaceAll("'", "&#39;");
 }
 
-async function addDoc(collectionRef, data) {
-    const newDocRef = doc(collectionRef);
-    await setDoc(newDocRef, data);
-    return newDocRef;
-}
-
 function isUnlockActive(unlockFlag, unlockAt) {
     if (!unlockFlag) return false;
     const approvedAt = unlockAt?.toDate?.()?.getTime?.() || 0;
@@ -1386,9 +1380,13 @@ async function loadRecords() {
             const dates = limitVal === 'all'
                 ? sortedDates
                 : sortedDates.filter(d => {
-                    if (grouped[d].isHoliday) return true; // always include holidays in range
-                    workingCount++;
-                    return workingCount <= parseInt(limitVal);
+                    if (workingCount >= parseInt(limitVal)) {
+                        return false;
+                    }
+                    if (!grouped[d].isHoliday) {
+                        workingCount++;
+                    }
+                    return true;
                 });
 
             let rows = "";

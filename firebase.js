@@ -5,7 +5,11 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.0/firebase
 const firebaseConfig = {
   apiKey: "AIzaSyAFUziq6QGKCwujtiTL-4Rk823FE12ZDGU",
   authDomain: "markattnedance.firebaseapp.com",
-  projectId: "markattnedance"
+  projectId: "markattnedance",
+  storageBucket: "markattnedance.firebasestorage.app",
+  messagingSenderId: "1035966486648",
+  appId: "1:1035966486648:web:77d5183243347384280886",
+  measurementId: "G-4X50753508"
 };
 
 const app = initializeApp(firebaseConfig);
