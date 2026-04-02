@@ -5293,7 +5293,7 @@ async function loadEmailReminderSection() {
     const filter    = document.getElementById('emailReminderCollegeFilter');
     if (!container) return;
 
-    container.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5;">Loading...</div>';
+    container.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5;grid-column: 1 / -1;">Loading college configurations...</div>';
 
     try {
         const snap = await getDocs(collection(db, 'colleges'));
@@ -5309,11 +5309,9 @@ async function loadEmailReminderSection() {
         }
         colleges.sort((a, b) => a.name.localeCompare(b.name));
 
-
-        // Populate filter — preserve current selection
         if (filter) {
             const currentVal = filter.value;
-            while (filter.options.length > 1) filter.remove(1);
+            filter.innerHTML = '<option value="all">🌐 All Colleges</option>';
             colleges.forEach(c => {
                 const o = document.createElement('option');
                 o.value = c.id; o.textContent = c.name;
@@ -5321,6 +5319,8 @@ async function loadEmailReminderSection() {
             });
             if (currentVal && [...filter.options].some(o => o.value === currentVal)) {
                 filter.value = currentVal;
+            } else if (![...filter.options].some(o => o.value === currentVal) && colleges.length > 0) {
+            	filter.value = 'all';
             }
         }
 
@@ -5328,53 +5328,116 @@ async function loadEmailReminderSection() {
         const visible = selectedId === 'all' ? colleges : colleges.filter(c => c.id === selectedId);
 
         if (visible.length === 0) {
-            container.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5;">No colleges found</div>';
+            container.innerHTML = '<div style="text-align:center;padding:40px;opacity:0.5; grid-column: 1 / -1;">No colleges found</div>';
             return;
         }
 
         container.innerHTML = visible.map(c => {
             const s = c.settings;
             const hasTiming = !!(s.fnStart && s.fnEnd);
-            const hasGPS    = !!(s.lat && s.lng);
             const remind    = 10;
+            function formatTime(timeStr) {
+                if (!timeStr) return '--:--';
+                const [h, m] = timeStr.split(':').map(Number);
+                const p = h >= 12 ? 'PM' : 'AM';
+                return (h % 12 || 12) + ':' + String(m).padStart(2,'0') + ' ' + p;
+            }
             function reminderTime(end) {
-                if (!end) return '--';
+                if (!end) return '--:--';
                 const [h, m] = end.split(':').map(Number);
                 const t = h * 60 + m - remind;
                 const rh = Math.floor(t / 60), rm = t % 60;
                 const p = rh >= 12 ? 'PM' : 'AM';
                 return (rh % 12 || 12) + ':' + String(rm).padStart(2,'0') + ' ' + p;
             }
-            const timingBadge = hasTiming
-                ? '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(16,185,129,0.2);color:#6ee7b7;">Timing Set</span>'
-                : '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(239,68,68,0.2);color:#fca5a5;">No Timing</span>';
-            const gpsBadge = hasGPS
-                ? '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(59,130,246,0.2);color:#93c5fd;">GPS Set</span>'
-                : '<span style="padding:4px 12px;border-radius:999px;font-size:12px;font-weight:700;background:rgba(245,158,11,0.2);color:#fcd34d;">GPS Pending</span>';
+            
             const timingBlock = hasTiming
-                ? '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;margin-top:14px;">'
-                  + '<div style="padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);">'
-                  + '<div style="opacity:0.55;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">FN Session</div>'
-                  + '<div style="font-weight:700;font-size:15px;">' + escapeHtml(s.fnStart) + ' to ' + escapeHtml(s.fnEnd) + '</div>'
-                  + '<div style="opacity:0.45;font-size:11px;margin-top:4px;">Reminder at ' + reminderTime(s.fnEnd) + '</div>'
-                  + '</div>'
-                  + '<div style="padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);">'
-                  + '<div style="opacity:0.55;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">AN Session</div>'
-                  + '<div style="font-weight:700;font-size:15px;">' + escapeHtml(s.anStart) + ' to ' + escapeHtml(s.anEnd) + '</div>'
-                  + '<div style="opacity:0.45;font-size:11px;margin-top:4px;">Reminder at ' + reminderTime(s.anEnd) + '</div>'
-                  + '</div></div>'
-                : '<div style="opacity:0.45;font-size:13px;padding:10px 0;">College admin has not configured timing yet.</div>';
-            return '<div style="padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.12);">'
-                + '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">'
-                + '<div><div style="font-weight:700;font-size:15px;">' + escapeHtml(c.name) + '</div>'
-                + '<div style="font-size:12px;opacity:0.55;margin-top:3px;">' + (c.isActive ? 'Active' : 'Inactive') + '</div></div>'
-                + '<div style="display:flex;gap:6px;flex-wrap:wrap;flex-shrink:0;">' + timingBadge + gpsBadge + '</div>'
-                + '</div>' + timingBlock + '</div>';
+                ? `<div style="display:flex; flex-direction:column; gap:12px; margin-top:20px;">
+                      <div style="background: rgba(59, 130, 246, 0.05); border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 6px;">
+                          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                              <strong style="color:var(--home-text); font-size: 14px;">FN Session</strong>
+                              <span style="font-size: 13px; color: var(--home-muted);">${formatTime(s.fnStart)} - ${formatTime(s.fnEnd)}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:6px; font-size:13px; color:#2563eb; font-weight:600;">
+                              <span>📨</span> Scheduled to send at: ${reminderTime(s.fnEnd)}
+                          </div>
+                      </div>
+                      <div style="background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10b981; padding: 12px 16px; border-radius: 6px;">
+                          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                              <strong style="color:var(--home-text); font-size: 14px;">AN Session</strong>
+                              <span style="font-size: 13px; color: var(--home-muted);">${formatTime(s.anStart)} - ${formatTime(s.anEnd)}</span>
+                          </div>
+                          <div style="display:flex; align-items:center; gap:6px; font-size:13px; color:#059669; font-weight:600;">
+                              <span>📨</span> Scheduled to send at: ${reminderTime(s.anEnd)}
+                          </div>
+                      </div>
+                   </div>`
+                : `<div style="padding: 24px 16px; text-align: center; background: rgba(241,245,249,0.5); border-radius: 8px; margin-top: 16px; border: 1px dashed #cbd5e1;">
+                       <span style="font-size:20px;">⚙️</span>
+                       <div style="color: var(--home-muted); font-size: 13px; margin-top: 8px;">College admin has not configured session timings yet. Emails will not send.</div>
+                   </div>`;
+
+            return `<div style="padding:24px; border-radius:16px; border:1px solid var(--home-border); background:#ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03); transition: transform 0.2s;">
+                        <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">
+                            <div>
+                                <div style="font-weight:800; font-size:16px; color: var(--home-text);">${escapeHtml(c.name)}</div>
+                                <div style="font-size:12px; font-weight:600; color: ${c.isActive ? '#10b981' : '#f43f5e'}; margin-top:4px; display:flex; align-items:center; gap:4px;">
+                                    <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:currentColor;"></span>
+                                    ${c.isActive ? 'Active College' : 'Inactive College'}
+                                </div>
+                            </div>
+                        </div>
+                        ${timingBlock}
+                    </div>`;
         }).join('');
 
+        // Also fetch the logs right away
+        loadEmailLogs();
     } catch (e) {
         console.error('loadEmailReminderSection:', e);
-        container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">Failed to load</div>';
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;grid-column: 1 / -1;">Failed to load college configurations.</div>';
+    }
+}
+
+async function loadEmailLogs() {
+    const tableBody = document.getElementById('emailLogsTableBody');
+    if (!tableBody) return;
+    tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; opacity: 0.5;">Loading logs...</td></tr>';
+    
+    try {
+        const logsQuery = query(collection(db, 'emailLogs'), orderBy('timestamp', 'desc'), limit(50));
+        const snap = await getDocs(logsQuery);
+        
+        if (snap.empty) {
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--home-muted);">No email deliveries logged yet. Emails are sent automatically 10 mins before sessions end.</td></tr>';
+            return;
+        }
+
+        tableBody.innerHTML = snap.docs.map(doc => {
+            const data = doc.data();
+            const dateStr = data.timestamp && typeof data.timestamp.toDate === 'function' ? 
+                            data.timestamp.toDate().toLocaleString() : 
+                            (data.date + ' ' + data.time);
+            
+            const isSuccess = data.status === 'success';
+            const statusBadge = isSuccess ? 
+                `<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;">✅ Success</span>` : 
+                `<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;">❌ Failed</span>`;
+            
+            return `<tr>
+                <td><strong>${escapeHtml(dateStr)}</strong></td>
+                <td>
+                    <div style="font-weight: 600;">${escapeHtml(data.userName || 'Unknown')}</div>
+                    <div style="font-size: 11px; opacity: 0.6;">${escapeHtml(data.studentId || '')}</div>
+                </td>
+                <td><a href="mailto:${escapeHtml(data.userEmail)}" style="color: #3b82f6; text-decoration: none;">${escapeHtml(data.userEmail || '--')}</a></td>
+                <td><span style="background: #f1f5f9; padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600;">${escapeHtml(data.sessionName || data.session || '--')}</span></td>
+                <td>${statusBadge}</td>
+            </tr>`;
+        }).join('');
+    } catch(err) {
+        console.error('Error loading email logs:', err);
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #ef4444;">Could not load logs. Need to create an index in Firebase possibly.</td></tr>';
     }
 }
 
@@ -7524,6 +7587,9 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
     const refresh = document.getElementById('refreshEmailReminderStats');
     if (refresh) refresh.addEventListener('click', () => loadEmailReminderSection());
+
+    const refreshLogs = document.getElementById('refreshEmailLogsBtn');
+    if (refreshLogs) refreshLogs.addEventListener('click', () => loadEmailLogs());
 
     // Filter wired after section loads (filter is populated dynamically)
     document.addEventListener('change', (e) => {

@@ -226,12 +226,12 @@ class EmailReminderService {
     }
 
     _log(sess, sessionName, minutesLeft, status, error = null) {
-        const logs = JSON.parse(localStorage.getItem('emailReminderLogs') || '[]');
-        logs.push({
+        const logData = {
             userId:      this.currentUser?.uid   || 'unknown',
             userName:    this.currentUser?.name  || 'Unknown',
             userEmail:   this.currentUser?.email || 'unknown',
-            studentId:   this.currentUser?.studentId || 'N/A',
+            studentId:   this.currentUser?.studentId || this.currentUser?.rollNumber || 'N/A',
+            collegeId:   this.currentUser?.collegeId || 'unknown',
             session:     sess.type,
             sessionName,
             minutesLeft,
@@ -241,9 +241,23 @@ class EmailReminderService {
             method:      'email',
             status,
             error
-        });
+        };
+
+        const logs = JSON.parse(localStorage.getItem('emailReminderLogs') || '[]');
+        logs.push(logData);
         if (logs.length > 200) logs.splice(0, logs.length - 200);
         localStorage.setItem('emailReminderLogs', JSON.stringify(logs));
+
+        // Write to Firestore emailLogs collection for Super Admin view
+        try {
+            if (window.db && window.collection && window.addDoc) {
+                const fsData = { ...logData };
+                if (window.serverTimestamp) fsData.timestamp = window.serverTimestamp();
+                window.addDoc(window.collection(window.db, 'emailLogs'), fsData);
+            }
+        } catch (fbErr) {
+            console.warn('Failed to log email to Firestore:', fbErr);
+        }
     }
 
     _toast(msg, type = 'info') {

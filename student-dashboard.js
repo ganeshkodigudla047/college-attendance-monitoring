@@ -4,7 +4,18 @@ import { loadAndApplyBackground } from "./college-background.js";
 import { initAutoLogout } from "./auto-logout.js";
 import { loadAdSlot } from "./ad-slot.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-import { doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, collection, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+import { doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, collection, serverTimestamp, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js";
+
+// Export to window for non-module scripts (e.g. email-reminder-service.js)
+window.db = db;
+window.collection = collection;
+window.addDoc = addDoc;
+window.serverTimestamp = serverTimestamp;
+window.getDoc = getDoc;
+window.doc = doc;
+window.getDocs = getDocs;
+window.query = query;
+window.where = where;
 
 // ================= GLOBAL VARIABLES =================
 let currentUser = null;
