@@ -103,12 +103,10 @@ function updateTimeBasedGreeting() {
 		greeting = 'Good Early Morning!';
 		subtext = 'The day is just beginning. Time to start fresh!';
 		icon = '🌄';
-		background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-		textColor = '#ffffff';
+		background = 'rgba(255, 235, 238, 0.8)'; 
+		textColor = '#1d1d1f';
 		elements = [
-			{ top: '-80px', right: '-60px', width: '280px', height: '280px', background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)' },
-			{ bottom: '-100px', left: '-50px', width: '220px', height: '220px', background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)' },
-			{ top: '40%', left: '30%', width: '120px', height: '120px', background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)' }
+			{ top: '-40px', right: '-20px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255, 128, 171, 0.2) 0%, transparent 70%)' }
 		];
 	}
 	// Morning (6 AM - 12 PM)
@@ -116,12 +114,10 @@ function updateTimeBasedGreeting() {
 		greeting = 'Good Morning!';
 		subtext = 'Rise and shine! Here\'s what\'s happening today.';
 		icon = '🌅';
-		background = 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)';
-		textColor = '#1e293b';
+		background = 'rgba(231, 245, 255, 0.8)'; 
+		textColor = '#1d1d1f';
 		elements = [
-			{ top: '-60px', right: '-40px', width: '260px', height: '260px', background: 'radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 65%)' },
-			{ bottom: '-80px', left: '-60px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255,200,150,0.3) 0%, transparent 70%)' },
-			{ top: '30%', right: '25%', width: '100px', height: '100px', background: 'radial-gradient(circle, rgba(255,255,255,0.25) 0%, transparent 70%)' }
+			{ top: '-40px', right: '-20px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(0, 113, 227, 0.1) 0%, transparent 70%)' }
 		];
 	}
 	// Afternoon (12 PM - 5 PM)
@@ -129,12 +125,10 @@ function updateTimeBasedGreeting() {
 		greeting = 'Good Afternoon!';
 		subtext = 'Keep up the great work! You\'re doing amazing.';
 		icon = '☀️';
-		background = 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
-		textColor = '#1e293b';
+		background = 'rgba(243, 231, 255, 0.8)'; 
+		textColor = '#1d1d1f';
 		elements = [
-			{ top: '-70px', right: '-50px', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(255,255,255,0.5) 0%, transparent 60%)' },
-			{ bottom: '-60px', left: '-40px', width: '220px', height: '220px', background: 'radial-gradient(circle, rgba(168,237,234,0.4) 0%, transparent 70%)' },
-			{ top: '50%', left: '50%', width: '140px', height: '140px', background: 'radial-gradient(circle, rgba(254,214,227,0.4) 0%, transparent 70%)' }
+			{ top: '-40px', right: '-20px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(175, 82, 222, 0.1) 0%, transparent 70%)' }
 		];
 	}
 	// Evening / Sunset (5 PM - 8 PM)
@@ -142,31 +136,21 @@ function updateTimeBasedGreeting() {
 		greeting = 'Good Evening!';
 		subtext = 'Winding down the day. Great job today!';
 		icon = '🌆';
-		background = 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)';
-		textColor = '#1e293b';
+		background = 'rgba(255, 243, 231, 0.8)'; 
+		textColor = '#1d1d1f';
 		elements = [
-			{ top: '-80px', right: '-60px', width: '280px', height: '280px', background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 65%)' },
-			{ bottom: '-70px', left: '-50px', width: '240px', height: '240px', background: 'radial-gradient(circle, rgba(250,112,154,0.25) 0%, transparent 70%)' },
-			{ top: '35%', right: '35%', width: '110px', height: '110px', background: 'radial-gradient(circle, rgba(254,225,64,0.3) 0%, transparent 70%)' }
+			{ top: '-40px', right: '-20px', width: '200px', height: '200px', background: 'radial-gradient(circle, rgba(255, 149, 0, 0.1) 0%, transparent 70%)' }
 		];
 	}
-	// Night (8 PM - 5 AM) - Dark with stars
+	// Night (8 PM - 5 AM)
 	else {
 		greeting = 'Good Night!';
 		subtext = 'Working late? Don\'t forget to rest when you can.';
 		icon = '🌙';
-		background = 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%)';
-		textColor = '#ffffff';
+		background = 'rgba(241, 241, 246, 0.8)'; 
+		textColor = '#1d1d1f';
 		elements = [
-			// Stars effect
-			{ top: '10%', right: '20%', width: '4px', height: '4px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 10px rgba(255,255,255,0.8)' },
-			{ top: '25%', right: '60%', width: '3px', height: '3px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 8px rgba(255,255,255,0.6)' },
-			{ top: '40%', right: '15%', width: '5px', height: '5px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 12px rgba(255,255,255,0.9)' },
-			{ top: '60%', right: '75%', width: '3px', height: '3px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 8px rgba(255,255,255,0.7)' },
-			{ top: '15%', right: '85%', width: '4px', height: '4px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 10px rgba(255,255,255,0.8)' },
-			{ top: '70%', right: '40%', width: '3px', height: '3px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 8px rgba(255,255,255,0.6)' },
-			{ top: '50%', right: '90%', width: '4px', height: '4px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 10px rgba(255,255,255,0.8)' },
-			{ top: '80%', right: '25%', width: '5px', height: '5px', background: '#ffffff', borderRadius: '50%', boxShadow: '0 0 12px rgba(255,255,255,0.9)' }
+			{ top: '10%', right: '20%', width: '4px', height: '4px', background: '#0071e3', borderRadius: '50%', opacity: 0.3 }
 		];
 	}
 
@@ -757,6 +741,12 @@ function showSection(id, isBack = false) {
 
 	const target = document.getElementById(id);
 	if (target) target.classList.add("active");
+
+	// Update sidebar active state
+	document.querySelectorAll("#sidebar li").forEach(li => {
+		li.classList.remove("active");
+		if (li.dataset.sec === id) li.classList.add("active");
+	});
 
 	// Auto-load data based on section
 	switch (id) {
@@ -2039,6 +2029,13 @@ async function loadHomeWidgets(totalCollegesCountArg) {
 			});
 			if (collegeList.length === 0) html = "<tr><td colspan='5' style='text-align:center;color:#94a3b8;'>No colleges yet</td></tr>";
 			saCollegesBody.innerHTML = html;
+			
+			// Update the new glance summary blocks
+			const pendingSetupCount = collegeList.filter(c => !(c.gpsSettings && c.settings)).length;
+			safeSet(document.getElementById("glanceActiveColleges"), activeSet.size);
+			safeSet(document.getElementById("glancePendingSetup"), pendingSetupCount);
+			safeSet(document.getElementById("glanceTotalUsers"), Object.values(usersByCollege).reduce((a, b) => a + b, 0));
+
 			saCollegesBody.querySelectorAll(".link[data-sec]").forEach(el => {
 				el.onclick = () => showSection(el.getAttribute("data-sec"));
 			});

@@ -384,7 +384,7 @@ function _buildCSS(imageUrl, isDark) {
             background-image: none !important;
         }
 
-        /* ── MAKE ALL CONTENT TRANSPARENT ── */
+        /* ── MAKE ALL CONTENT TRANSPARENT GLASS ── */
         body.has-bg .page, body.has-bg .section, body.has-bg .page.section,
         body.has-bg .main, body.has-bg .sidebar, body.has-bg .sidebar-footer,
         body.has-bg .header,
@@ -408,11 +408,11 @@ function _buildCSS(imageUrl, isDark) {
         body.has-bg table, body.has-bg td,
         body.has-bg .bg-audit-card, body.has-bg .notify-header,
         body.has-bg .home-session-box, body.has-bg .mark-session-box, body.has-bg .attendance-box {
-            background: transparent !important;
-            background-color: transparent !important;
+            background: rgba(255, 255, 255, 0.05) !important;
+            background-color: rgba(255, 255, 255, 0.05) !important;
             box-shadow: none !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
+            backdrop-filter: blur(20px) saturate(180%) !important;
+            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
         }
         /* custom select blur */
         body.has-bg .cs-trigger {
